@@ -30,6 +30,20 @@ builder.Services.AddSwaggerGen(c =>
     }
 });
 
+// Add Scalar services
+builder.Services.AddScalarApiReference(options =>
+{
+    options
+        .WithTitle("E-Education API")
+        .WithTheme(Scalar.AspNetCore.ScalarTheme.Dark)
+        .WithDefaultHttpClient(Scalar.AspNetCore.ScalarTarget.CSharp, Scalar.AspNetCore.ScalarClient.HttpClient)
+        .WithServers(new[] 
+        { 
+            Environment.GetEnvironmentVariable("API_URL") ?? "https://e-education-be.onrender.com",
+            "http://localhost:5000" 
+        });
+});
+
 // Database Configuration
 // Render cung cấp DATABASE_URL, nhưng EF Core cần ConnectionStrings__DefaultConnection
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -97,18 +111,7 @@ app.UseSwaggerUI(c =>
 
 // Scalar API Documentation (UI đẹp hơn như hình bạn thấy)
 // Truy cập tại: /docs
-app.MapScalarApiReference(options =>
-{
-    options
-        .WithTitle("E-Education API")
-        .WithTheme(Scalar.AspNetCore.ScalarTheme.Dark) // Dark theme
-        .WithDefaultHttpClient(Scalar.AspNetCore.ScalarTarget.CSharp, Scalar.AspNetCore.ScalarClient.HttpClient)
-        .WithServers(new[] 
-        { 
-            Environment.GetEnvironmentVariable("API_URL") ?? "https://e-education-be.onrender.com",
-            "http://localhost:5000" 
-        });
-}, "/docs");
+app.UseScalarApiReference();
 
 app.UseCors("AllowFrontend");
 
