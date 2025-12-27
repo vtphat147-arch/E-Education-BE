@@ -2,11 +2,16 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using E_Education.API.Data;
 using E_Education.API.Models;
+using System.ComponentModel;
 
 namespace E_Education.API.Controllers
 {
+    /// <summary>
+    /// API quản lý khóa học
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
+    [Tags("Courses")]
     public class CoursesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -16,11 +21,17 @@ namespace E_Education.API.Controllers
             _context = context;
         }
 
-        // GET: api/Courses
+        /// <summary>
+        /// Lấy danh sách tất cả khóa học với tùy chọn tìm kiếm và lọc theo category
+        /// </summary>
+        /// <param name="search">Tìm kiếm theo tiêu đề hoặc tên giảng viên</param>
+        /// <param name="category">Lọc theo category (programming, design, marketing, data, business)</param>
+        /// <returns>Danh sách khóa học</returns>
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<Course>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<Course>>> GetCourses(
-            [FromQuery] string? search,
-            [FromQuery] string? category)
+            [FromQuery, Description("Tìm kiếm theo tiêu đề hoặc giảng viên")] string? search,
+            [FromQuery, Description("Lọc theo category (all, programming, design, marketing, data, business)")] string? category)
         {
             var query = _context.Courses.AsQueryable();
 
@@ -42,8 +53,14 @@ namespace E_Education.API.Controllers
             return Ok(courses);
         }
 
-        // GET: api/Courses/5
+        /// <summary>
+        /// Lấy thông tin chi tiết một khóa học theo ID
+        /// </summary>
+        /// <param name="id">ID của khóa học</param>
+        /// <returns>Thông tin khóa học</returns>
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(Course), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Course>> GetCourse(int id)
         {
             var course = await _context.Courses.FindAsync(id);

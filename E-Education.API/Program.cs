@@ -1,12 +1,34 @@
 using Microsoft.EntityFrameworkCore;
 using E_Education.API.Data;
+using Microsoft.OpenApi.Models;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "E-Education API",
+        Version = "v1.0.0",
+        Description = "API cho nền tảng học trực tuyến E-Education. Quản lý khóa học, tìm kiếm và lọc khóa học.",
+        Contact = new OpenApiContact
+        {
+            Name = "E-Education Team"
+        }
+    });
+
+    // Include XML comments if available
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
+});
 
 // Database Configuration
 // Render cung cấp DATABASE_URL, nhưng EF Core cần ConnectionStrings__DefaultConnection
@@ -66,21 +88,27 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-else
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "E-Education API v1");
+    c.RoutePrefix = "swagger";
+});
+
+// Scalar API Documentation (UI đẹp hơn như hình bạn thấy)
+// Truy cập tại: /docs
+app.MapScalarApiReference(options =>
 {
-    // Production: Enable Swagger nếu cần test
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "E-Education API v1");
-        c.RoutePrefix = "swagger";
-    });
-}
+    options
+        .WithTitle("E-Education API")
+        .WithTheme(Scalar.AspNetCore.ScalarTheme.Dark) // Dark theme
+        .WithDefaultHttpClient(Scalar.AspNetCore.ScalarTarget.CSharp, Scalar.AspNetCore.ScalarClient.HttpClient)
+        .WithServers(new[] 
+        { 
+            Environment.GetEnvironmentVariable("API_URL") ?? "https://e-education-be.onrender.com",
+            "http://localhost:5000" 
+        });
+}, "/docs");
 
 app.UseCors("AllowFrontend");
 
