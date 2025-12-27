@@ -10,17 +10,18 @@ namespace E_Education.API.Data
         {
         }
 
-        public DbSet<Course> Courses { get; set; }
+        public DbSet<DesignComponent> DesignComponents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<Course>(entity =>
+            modelBuilder.Entity<DesignComponent>(entity =>
             {
-                entity.ToTable("Courses");
+                entity.ToTable("DesignComponents");
                 entity.HasIndex(e => e.Category);
-                entity.HasIndex(e => e.Title);
+                entity.HasIndex(e => e.Type);
+                entity.HasIndex(e => e.Name);
             });
         }
     }

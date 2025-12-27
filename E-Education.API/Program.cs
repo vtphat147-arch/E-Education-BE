@@ -79,7 +79,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Health check endpoint
-app.MapGet("/", () => new { message = "E-Education API is running", status = "ok" });
+app.MapGet("/", () => new { message = "UI Components API is running", status = "ok" });
 
 // Đảm bảo database được tạo
 using (var scope = app.Services.CreateScope())
