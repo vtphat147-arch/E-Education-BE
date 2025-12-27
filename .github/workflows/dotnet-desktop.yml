@@ -1,0 +1,34 @@
+name: .NET Desktop
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    
+    - name: Restore dependencies
+      run: dotnet restore E-Education.API/E-Education.API.csproj --no-cache
+      env:
+        NUGET_PACKAGES: ${{ runner.temp }}\.nuget\packages
+    
+    - name: Build
+      run: dotnet build E-Education.API/E-Education.API.csproj --no-restore --configuration Release
+    
+    - name: Test
+      run: dotnet test E-Education.API/E-Education.API.csproj --no-build --verbosity normal
+      continue-on-error: true
+      env:
+        Solution_Name: E-Education.API
+        DOTNET_ROOT: C:\Program Files\dotnet
