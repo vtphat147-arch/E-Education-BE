@@ -1,34 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using E_Education.API.Data;
-using Microsoft.OpenApi.Models;
-using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "E-Education API",
-        Version = "v1.0.0",
-        Description = "API cho nền tảng học trực tuyến E-Education. Quản lý khóa học, tìm kiếm và lọc khóa học.",
-        Contact = new OpenApiContact
-        {
-            Name = "E-Education Team"
-        }
-    });
-
-    // Include XML comments if available
-    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    if (File.Exists(xmlPath))
-    {
-        c.IncludeXmlComments(xmlPath);
-    }
-});
+builder.Services.AddSwaggerGen();
 
 
 // Database Configuration
@@ -90,24 +68,7 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline
 app.UseSwagger();
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "E-Education API v1");
-    c.RoutePrefix = "docs"; // Đổi route từ "swagger" sang "docs" để giống như bạn muốn
-    c.DocumentTitle = "E-Education API Documentation";
-    c.DefaultModelsExpandDepth(-1); // Ẩn models section mặc định
-    c.DisplayRequestDuration();
-    c.EnableDeepLinking();
-    c.EnableFilter();
-    c.ShowExtensions();
-    c.EnableValidator();
-    c.SupportedSubmitMethods(Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Get, 
-                            Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Post,
-                            Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Put,
-                            Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Delete);
-});
-
-// Swagger UI được cấu hình ở trên
+app.UseSwaggerUI();
 
 app.UseCors("AllowFrontend");
 
