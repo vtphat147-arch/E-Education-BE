@@ -10,7 +10,7 @@ namespace E_Education.API.Controllers
     /// API quản lý khóa học
     /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/courses")]
     [Tags("Courses")]
     public class CoursesController : ControllerBase
     {
