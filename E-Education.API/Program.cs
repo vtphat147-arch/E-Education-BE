@@ -30,19 +30,6 @@ builder.Services.AddSwaggerGen(c =>
     }
 });
 
-// Add Scalar services
-builder.Services.AddScalarApiReference(options =>
-{
-    options
-        .WithTitle("E-Education API")
-        .WithTheme(Scalar.AspNetCore.ScalarTheme.Dark)
-        .WithDefaultHttpClient(Scalar.AspNetCore.ScalarTarget.CSharp, Scalar.AspNetCore.ScalarClient.HttpClient)
-        .WithServers(new[] 
-        { 
-            Environment.GetEnvironmentVariable("API_URL") ?? "https://e-education-be.onrender.com",
-            "http://localhost:5000" 
-        });
-});
 
 // Database Configuration
 // Render cung cấp DATABASE_URL, nhưng EF Core cần ConnectionStrings__DefaultConnection
@@ -106,12 +93,21 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "E-Education API v1");
-    c.RoutePrefix = "swagger";
+    c.RoutePrefix = "docs"; // Đổi route từ "swagger" sang "docs" để giống như bạn muốn
+    c.DocumentTitle = "E-Education API Documentation";
+    c.DefaultModelsExpandDepth(-1); // Ẩn models section mặc định
+    c.DisplayRequestDuration();
+    c.EnableDeepLinking();
+    c.EnableFilter();
+    c.ShowExtensions();
+    c.EnableValidator();
+    c.SupportedSubmitMethods(Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Get, 
+                            Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Post,
+                            Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Put,
+                            Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Delete);
 });
 
-// Scalar API Documentation (UI đẹp hơn như hình bạn thấy)
-// Truy cập tại: /docs
-app.UseScalarApiReference();
+// Swagger UI được cấu hình ở trên
 
 app.UseCors("AllowFrontend");
 
