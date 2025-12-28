@@ -47,6 +47,7 @@ namespace E_Education.API.Models
         public virtual ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
         public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
         public virtual ICollection<ComponentViewHistory> ViewHistory { get; set; } = new List<ComponentViewHistory>();
+        public virtual ICollection<ComponentLike> ComponentLikes { get; set; } = new List<ComponentLike>();
     }
 }
 

@@ -92,6 +92,22 @@ namespace E_Education.API.Data
                     .HasForeignKey(e => e.ComponentId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
+
+            modelBuilder.Entity<ComponentLike>(entity =>
+            {
+                entity.ToTable("ComponentLikes");
+                entity.HasIndex(e => new { e.UserId, e.ComponentId }).IsUnique(); // Ensure one like per user per component
+                entity.HasIndex(e => e.ComponentId);
+                entity.HasIndex(e => e.LikedAt);
+                entity.HasOne(e => e.User)
+                    .WithMany(u => u.ComponentLikes)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.Component)
+                    .WithMany()
+                    .HasForeignKey(e => e.ComponentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
         }
     }
 }

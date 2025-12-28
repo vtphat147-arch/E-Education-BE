@@ -239,45 +239,82 @@ namespace E_Education.API.Controllers
         [Authorize]
         public async Task<IActionResult> LikeComponent(int id)
         {
-            var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            try
             {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var component = await _context.DesignComponents.FindAsync(id);
-            if (component == null)
-            {
-                return NotFound(new { message = "Component not found" });
-            }
-
-            // Check if user already liked this component
-            var existingLike = await _context.ComponentLikes
-                .FirstOrDefaultAsync(l => l.UserId == userId && l.ComponentId == id);
-
-            if (existingLike != null)
-            {
-                // Unlike: Remove like record and decrease likes count
-                _context.ComponentLikes.Remove(existingLike);
-                component.Likes = Math.Max(0, component.Likes - 1);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { likes = component.Likes, isLiked = false, message = "Component unliked" });
-            }
-            else
-            {
-                // Like: Create like record and increase likes count
-                var like = new ComponentLike
+                var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
                 {
-                    UserId = userId,
-                    ComponentId = id,
-                    LikedAt = DateTime.UtcNow
-                };
-                _context.ComponentLikes.Add(like);
-                component.Likes++;
-                await _context.SaveChangesAsync();
+                    return Unauthorized(new { message = "User not authenticated", error = "INVALID_TOKEN" });
+                }
 
-                return Ok(new { likes = component.Likes, isLiked = true, message = "Component liked" });
+                var component = await _context.DesignComponents.FindAsync(id);
+                if (component == null)
+                {
+                    return NotFound(new { message = "Component not found", error = "COMPONENT_NOT_FOUND" });
+                }
+
+                // Use transaction to ensure data consistency
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    // Check if user already liked this component
+                    var existingLike = await _context.ComponentLikes
+                        .FirstOrDefaultAsync(l => l.UserId == userId && l.ComponentId == id);
+
+                    if (existingLike != null)
+                    {
+                        // Unlike: Remove like record and decrease likes count
+                        _context.ComponentLikes.Remove(existingLike);
+                        component.Likes = Math.Max(0, component.Likes - 1);
+                        
+                        await _context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        return Ok(new { likes = component.Likes, isLiked = false, message = "Component unliked" });
+                    }
+                    else
+                    {
+                        // Like: Create like record and increase likes count
+                        // Double-check to prevent duplicate likes (race condition)
+                        var duplicateCheck = await _context.ComponentLikes
+                            .FirstOrDefaultAsync(l => l.UserId == userId && l.ComponentId == id);
+                        
+                        if (duplicateCheck != null)
+                        {
+                            // Already liked by another request, rollback and return existing state
+                            await transaction.RollbackAsync();
+                            return Ok(new { likes = component.Likes, isLiked = true, message = "Component already liked" });
+                        }
+
+                        var like = new ComponentLike
+                        {
+                            UserId = userId,
+                            ComponentId = id,
+                            LikedAt = DateTime.UtcNow
+                        };
+                        _context.ComponentLikes.Add(like);
+                        component.Likes++;
+                        
+                        await _context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        return Ok(new { likes = component.Likes, isLiked = true, message = "Component liked" });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+            catch (DbUpdateException ex)
+            {
+                // Handle unique constraint violations or other DB errors
+                return BadRequest(new { message = "Failed to update like status. Please try again.", error = "DB_ERROR", details = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "An error occurred while processing your request", error = "INTERNAL_ERROR" });
             }
         }
 
@@ -286,16 +323,31 @@ namespace E_Education.API.Controllers
         [Authorize]
         public async Task<IActionResult> CheckLike(int id)
         {
-            var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            try
             {
+                var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return Ok(new { isLiked = false });
+                }
+
+                // Verify component exists
+                var componentExists = await _context.DesignComponents.AnyAsync(c => c.Id == id);
+                if (!componentExists)
+                {
+                    return NotFound(new { message = "Component not found", isLiked = false });
+                }
+
+                var isLiked = await _context.ComponentLikes
+                    .AnyAsync(l => l.UserId == userId && l.ComponentId == id);
+
+                return Ok(new { isLiked });
+            }
+            catch (Exception)
+            {
+                // Return false on error to allow UI to continue functioning
                 return Ok(new { isLiked = false });
             }
-
-            var isLiked = await _context.ComponentLikes
-                .AnyAsync(l => l.UserId == userId && l.ComponentId == id);
-
-            return Ok(new { isLiked });
         }
 
         // DELETE: api/components/5
