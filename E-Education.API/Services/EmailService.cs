@@ -27,17 +27,40 @@ namespace E_Education.API.Services
             try
             {
                 var smtpSettings = _configuration.GetSection("SmtpSettings");
-                var smtpHost = smtpSettings["Host"] ?? "smtp.gmail.com";
-                var smtpPort = int.Parse(smtpSettings["Port"] ?? "587");
-                var smtpUser = smtpSettings["User"];
-                var smtpPassword = smtpSettings["Password"];
-                var fromEmail = smtpSettings["FromEmail"] ?? smtpUser;
-                var fromName = smtpSettings["FromName"] ?? "E-Education";
+                
+                // Try to get from configuration first, then fallback to environment variables
+                var smtpHost = smtpSettings["Host"] 
+                    ?? Environment.GetEnvironmentVariable("SMTP__HOST") 
+                    ?? "smtp.gmail.com";
+                    
+                var smtpPortStr = smtpSettings["Port"] 
+                    ?? Environment.GetEnvironmentVariable("SMTP__PORT") 
+                    ?? "587";
+                var smtpPort = int.Parse(smtpPortStr);
+                
+                var smtpUser = smtpSettings["User"] 
+                    ?? Environment.GetEnvironmentVariable("SMTP__USER");
+                    
+                var smtpPassword = smtpSettings["Password"] 
+                    ?? Environment.GetEnvironmentVariable("SMTP__PASSWORD");
+                    
+                var fromEmail = smtpSettings["FromEmail"] 
+                    ?? Environment.GetEnvironmentVariable("SMTP__FROMEMAIL") 
+                    ?? smtpUser;
+                    
+                var fromName = smtpSettings["FromName"] 
+                    ?? Environment.GetEnvironmentVariable("SMTP__FROMNAME") 
+                    ?? "E-Education";
+
+                // Log for debugging
+                _logger.LogInformation("SMTP Config - Host: {Host}, Port: {Port}, User: {HasUser}, Password: {HasPassword}", 
+                    smtpHost, smtpPort, !string.IsNullOrEmpty(smtpUser), !string.IsNullOrEmpty(smtpPassword));
 
                 // If SMTP is not configured, log and skip (for development)
                 if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
                 {
-                    _logger.LogWarning("SMTP settings not configured. Email verification skipped.");
+                    _logger.LogWarning("SMTP settings not configured. Email verification skipped. User: {User}, Password: {HasPassword}", 
+                        smtpUser ?? "null", !string.IsNullOrEmpty(smtpPassword));
                     _logger.LogInformation($"Verification link: {GetVerificationUrl(verificationToken)}");
                     return;
                 }
