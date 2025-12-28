@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using E_Education.API.Data;
 using E_Education.API.Models;
 
@@ -76,6 +78,20 @@ namespace E_Education.API.Controllers
 
             // Increment views
             component.Views++;
+            
+            // Track view history if user is authenticated
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int userId))
+            {
+                var viewHistory = new ComponentViewHistory
+                {
+                    UserId = userId,
+                    ComponentId = id,
+                    ViewedAt = DateTime.UtcNow
+                };
+                _context.ComponentViewHistory.Add(viewHistory);
+            }
+
             await _context.SaveChangesAsync();
 
             return Ok(component);
