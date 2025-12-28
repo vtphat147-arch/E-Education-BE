@@ -20,11 +20,17 @@ namespace E_Education.API.Controllers
 
         // GET: api/components
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<DesignComponent>>> GetComponents(
+        public async Task<ActionResult> GetComponents(
             [FromQuery] string? category,
             [FromQuery] string? type,
             [FromQuery] string? search,
-            [FromQuery] string? tags)
+            [FromQuery] string? tags,
+            [FromQuery] string? framework,
+            [FromQuery] string? sortBy = "popular", // popular, newest, mostLiked, name
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] int? minViews = null,
+            [FromQuery] int? minLikes = null)
         {
             var query = _context.DesignComponents.AsQueryable();
 
@@ -40,29 +46,72 @@ namespace E_Education.API.Controllers
                 query = query.Where(c => c.Type.ToLower().Contains(type.ToLower()));
             }
 
-            // Search in name, description
+            // Search in name, description, tags
             if (!string.IsNullOrEmpty(search))
             {
+                var searchLower = search.ToLower();
                 query = query.Where(c => 
-                    c.Name.ToLower().Contains(search.ToLower()) ||
-                    c.Description.ToLower().Contains(search.ToLower()));
+                    c.Name.ToLower().Contains(searchLower) ||
+                    c.Description.ToLower().Contains(searchLower) ||
+                    (c.Tags != null && c.Tags.ToLower().Contains(searchLower)));
             }
 
             // Filter by tags
             if (!string.IsNullOrEmpty(tags))
             {
-                var tagList = tags.ToLower().Split(',');
+                var tagList = tags.ToLower().Split(',').Select(t => t.Trim());
                 query = query.Where(c => 
                     c.Tags != null && 
-                    tagList.Any(tag => c.Tags.ToLower().Contains(tag.Trim())));
+                    tagList.Any(tag => c.Tags.ToLower().Contains(tag)));
             }
 
+            // Filter by framework
+            if (!string.IsNullOrEmpty(framework))
+            {
+                query = query.Where(c => c.Framework != null && c.Framework.ToLower() == framework.ToLower());
+            }
+
+            // Filter by min views
+            if (minViews.HasValue)
+            {
+                query = query.Where(c => c.Views >= minViews.Value);
+            }
+
+            // Filter by min likes
+            if (minLikes.HasValue)
+            {
+                query = query.Where(c => c.Likes >= minLikes.Value);
+            }
+
+            // Sorting
+            query = sortBy.ToLower() switch
+            {
+                "newest" => query.OrderByDescending(c => c.CreatedAt),
+                "mostliked" => query.OrderByDescending(c => c.Likes).ThenByDescending(c => c.Views),
+                "name" => query.OrderBy(c => c.Name),
+                "popular" or _ => query.OrderByDescending(c => c.Views).ThenByDescending(c => c.CreatedAt)
+            };
+
+            // Get total count before pagination
+            var total = await query.CountAsync();
+
+            // Pagination
             var components = await query
-                .OrderByDescending(c => c.Views)
-                .ThenByDescending(c => c.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
-            return Ok(components);
+            return Ok(new
+            {
+                data = components,
+                pagination = new
+                {
+                    page,
+                    pageSize,
+                    total,
+                    totalPages = (int)Math.Ceiling(total / (double)pageSize)
+                }
+            });
         }
 
         // GET: api/components/5
@@ -80,7 +129,7 @@ namespace E_Education.API.Controllers
             component.Views++;
             
             // Track view history if user is authenticated
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int userId))
             {
                 var viewHistory = new ComponentViewHistory
