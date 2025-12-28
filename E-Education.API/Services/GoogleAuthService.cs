@@ -17,15 +17,18 @@ namespace E_Education.API.Services
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly IAuthService _authService;
+        private readonly ILogger<GoogleAuthService> _logger;
 
         public GoogleAuthService(
             ApplicationDbContext context,
             IConfiguration configuration,
-            IAuthService authService)
+            IAuthService authService,
+            ILogger<GoogleAuthService> logger)
         {
             _context = context;
             _configuration = configuration;
             _authService = authService;
+            _logger = logger;
         }
 
         public async Task<AuthResponseDto> AuthenticateAsync(string idToken)
@@ -37,10 +40,28 @@ namespace E_Education.API.Services
                     throw new InvalidOperationException("ID token is required");
                 }
 
-                var clientId = _configuration["GoogleOAuth:ClientId"];
+                // Try to get ClientId from configuration (supports appsettings.json and environment variables)
+                var clientId = _configuration["GoogleOAuth:ClientId"] 
+                    ?? Environment.GetEnvironmentVariable("GOOGLE_OAUTH__CLIENT_ID")
+                    ?? Environment.GetEnvironmentVariable("GoogleOAuth__ClientId");
+                
+                // Log for debugging
+                _logger.LogInformation("Attempting to load Google OAuth ClientId. Found: {HasValue}", !string.IsNullOrEmpty(clientId));
+                
                 if (string.IsNullOrEmpty(clientId))
                 {
-                    throw new InvalidOperationException("Google OAuth ClientId is not configured. Please set GOOGLE_OAUTH__CLIENT_ID environment variable.");
+                    var configValue = _configuration["GoogleOAuth:ClientId"];
+                    var envValue1 = Environment.GetEnvironmentVariable("GOOGLE_OAUTH__CLIENT_ID");
+                    var envValue2 = Environment.GetEnvironmentVariable("GoogleOAuth__ClientId");
+                    
+                    _logger.LogError(
+                        "Google OAuth ClientId not found. Config value: {ConfigValue}, Env GOOGLE_OAUTH__CLIENT_ID: {Env1}, Env GoogleOAuth__ClientId: {Env2}",
+                        configValue ?? "null",
+                        envValue1 ?? "null",
+                        envValue2 ?? "null"
+                    );
+                    
+                    throw new InvalidOperationException("Google OAuth ClientId is not configured. Please set GOOGLE_OAUTH__CLIENT_ID environment variable on Render.");
                 }
 
                 // Verify Google ID token
