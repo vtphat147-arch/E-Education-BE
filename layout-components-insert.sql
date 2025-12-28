@@ -6,11 +6,12 @@
 -- =====================================================
 
 -- Header 1: Minimal Header with Logo and Navigation
-INSERT INTO "DesignComponents" ("Name", "Description", "Category", "HtmlCode", "CssCode", "JsCode", "Tags", "Views", "Likes", "IsPremium", "CreatedAt", "UpdatedAt")
+INSERT INTO "DesignComponents" ("Name", "Category", "Type", "Preview", "HtmlCode", "CssCode", "JsCode", "Description", "Tags", "Framework", "Views", "Likes", "CreatedAt", "UpdatedAt")
 VALUES (
     'Minimal Header',
-    'Clean and simple header with logo and navigation menu. Perfect for modern websites.',
-    'Header',
+    'header',
+    'minimal-header',
+    'https://images.unsplash.com/photo-1557683316-973673baf926?w=800&h=200&fit=crop',
     '<header class="header-minimal">
   <div class="container">
     <nav class="navbar">
@@ -106,20 +107,22 @@ VALUES (
     alert("Get Started clicked!");
   });
 });',
+    'Clean and simple header with logo and navigation menu. Perfect for modern websites.',
     'header, navigation, minimal, logo',
+    'html',
     0,
     0,
-    false,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 ) ON CONFLICT DO NOTHING;
 
 -- Header 2: Glassmorphism Header
-INSERT INTO "DesignComponents" ("Name", "Description", "Category", "HtmlCode", "CssCode", "JsCode", "Tags", "Views", "Likes", "IsPremium", "CreatedAt", "UpdatedAt")
+INSERT INTO "DesignComponents" ("Name", "Category", "Type", "Preview", "HtmlCode", "CssCode", "JsCode", "Description", "Tags", "Framework", "Views", "Likes", "CreatedAt", "UpdatedAt")
 VALUES (
     'Glassmorphism Header',
-    'Modern glassmorphism effect header with blur background and gradient accent.',
-    'Header',
+    'header',
+    'glassmorphism-header',
+    'https://images.unsplash.com/photo-1557683316-973673baf926?w=800&h=200&fit=crop',
     '<header class="header-glass">
   <div class="glass-nav">
     <div class="logo-section">
@@ -251,20 +254,22 @@ body {
     });
   });
 });',
+    'Modern glassmorphism effect header with blur background and gradient accent.',
     'header, glassmorphism, glass, modern, navigation',
+    'html',
     0,
     0,
-    false,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 ) ON CONFLICT DO NOTHING;
 
 -- Header 3: Sticky Sidebar Header
-INSERT INTO "DesignComponents" ("Name", "Description", "Category", "HtmlCode", "CssCode", "JsCode", "Tags", "Views", "Likes", "IsPremium", "CreatedAt", "UpdatedAt")
+INSERT INTO "DesignComponents" ("Name", "Category", "Type", "Preview", "HtmlCode", "CssCode", "JsCode", "Description", "Tags", "Framework", "Views", "Likes", "CreatedAt", "UpdatedAt")
 VALUES (
     'Sidebar Navigation Header',
-    'Elegant sidebar navigation with icon-based menu items and smooth animations.',
-    'Header',
+    'header',
+    'sidebar-navigation',
+    'https://images.unsplash.com/photo-1557683316-973673baf926?w=800&h=200&fit=crop',
     '<header class="sidebar-header">
   <div class="sidebar">
     <div class="sidebar-logo">
@@ -434,10 +439,11 @@ body {
     }
   });
 });',
+    'Elegant sidebar navigation with icon-based menu items and smooth animations.',
     'header, sidebar, navigation, dashboard, menu',
+    'html',
     0,
     0,
-    false,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 ) ON CONFLICT DO NOTHING;
@@ -447,11 +453,12 @@ body {
 -- =====================================================
 
 -- Footer 1: Modern Footer with Links
-INSERT INTO "DesignComponents" ("Name", "Description", "Category", "HtmlCode", "CssCode", "JsCode", "Tags", "Views", "Likes", "IsPremium", "CreatedAt", "UpdatedAt")
+INSERT INTO "DesignComponents" ("Name", "Category", "Type", "Preview", "HtmlCode", "CssCode", "JsCode", "Description", "Tags", "Framework", "Views", "Likes", "CreatedAt", "UpdatedAt")
 VALUES (
     'Modern Footer',
-    'Clean and comprehensive footer with multiple sections, social links, and newsletter signup.',
-    'Footer',
+    'footer',
+    'modern-footer',
+    'https://images.unsplash.com/photo-1557683316-973673baf926?w=800&h=200&fit=crop',
     '<footer class="footer-modern">
   <div class="footer-container">
     <div class="footer-content">
@@ -676,20 +683,22 @@ VALUES (
     });
   });
 });',
+    'Clean and comprehensive footer with multiple sections, social links, and newsletter signup.',
     'footer, links, newsletter, social, modern',
+    'html',
     0,
     0,
-    false,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 ) ON CONFLICT DO NOTHING;
 
 -- Footer 2: Minimal Footer
-INSERT INTO "DesignComponents" ("Name", "Description", "Category", "HtmlCode", "CssCode", "JsCode", "Tags", "Views", "Likes", "IsPremium", "CreatedAt", "UpdatedAt")
+INSERT INTO "DesignComponents" ("Name", "Category", "Type", "Preview", "HtmlCode", "CssCode", "JsCode", "Description", "Tags", "Framework", "Views", "Likes", "CreatedAt", "UpdatedAt")
 VALUES (
     'Minimal Footer',
-    'Simple and elegant footer design perfect for landing pages.',
-    'Footer',
+    'footer',
+    'minimal-footer',
+    'https://images.unsplash.com/photo-1557683316-973673baf926?w=800&h=200&fit=crop',
     '<footer class="footer-minimal">
   <div class="footer-wrapper">
     <div class="footer-links">
@@ -741,11 +750,11 @@ VALUES (
   margin: 0;
   font-size: 0.9rem;
 }',
-    '',
+    'Simple and elegant footer design perfect for landing pages.',
     'footer, minimal, simple, clean',
+    'html',
     0,
     0,
-    false,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 ) ON CONFLICT DO NOTHING;
@@ -755,11 +764,12 @@ VALUES (
 -- =====================================================
 
 -- Navigation 1: Breadcrumb Navigation
-INSERT INTO "DesignComponents" ("Name", "Description", "Category", "HtmlCode", "CssCode", "JsCode", "Tags", "Views", "Likes", "IsPremium", "CreatedAt", "UpdatedAt")
+INSERT INTO "DesignComponents" ("Name", "Category", "Type", "Preview", "HtmlCode", "CssCode", "JsCode", "Description", "Tags", "Framework", "Views", "Likes", "CreatedAt", "UpdatedAt")
 VALUES (
     'Breadcrumb Navigation',
-    'Elegant breadcrumb navigation component with icons and separators.',
-    'Navigation',
+    'navigation',
+    'breadcrumb-navigation',
+    'https://images.unsplash.com/photo-1557683316-973673baf926?w=800&h=200&fit=crop',
     '<nav class="breadcrumb-nav">
   <ol class="breadcrumb-list">
     <li class="breadcrumb-item">
@@ -830,21 +840,22 @@ VALUES (
   font-weight: 600;
   padding: 0.5rem 0.75rem;
 }',
-    '',
+    'Elegant breadcrumb navigation component with icons and separators.',
     'navigation, breadcrumb, menu, links',
+    'html',
     0,
     0,
-    false,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 ) ON CONFLICT DO NOTHING;
 
 -- Navigation 2: Tab Navigation
-INSERT INTO "DesignComponents" ("Name", "Description", "Category", "HtmlCode", "CssCode", "JsCode", "Tags", "Views", "Likes", "IsPremium", "CreatedAt", "UpdatedAt")
+INSERT INTO "DesignComponents" ("Name", "Category", "Type", "Preview", "HtmlCode", "CssCode", "JsCode", "Description", "Tags", "Framework", "Views", "Likes", "CreatedAt", "UpdatedAt")
 VALUES (
     'Tab Navigation',
-    'Modern tab navigation with smooth transitions and active states.',
-    'Navigation',
+    'navigation',
+    'tab-navigation',
+    'https://images.unsplash.com/photo-1557683316-973673baf926?w=800&h=200&fit=crop',
     '<nav class="tab-navigation">
   <div class="tab-list">
     <button class="tab-item active" data-tab="overview">Overview</button>
@@ -974,10 +985,11 @@ VALUES (
     }
   });
 });',
+    'Modern tab navigation with smooth transitions and active states.',
     'navigation, tabs, menu, ui, interactive',
+    'html',
     0,
     0,
-    false,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 ) ON CONFLICT DO NOTHING;
@@ -987,11 +999,12 @@ VALUES (
 -- =====================================================
 
 -- Sidebar 1: Filter Sidebar
-INSERT INTO "DesignComponents" ("Name", "Description", "Category", "HtmlCode", "CssCode", "JsCode", "Tags", "Views", "Likes", "IsPremium", "CreatedAt", "UpdatedAt")
+INSERT INTO "DesignComponents" ("Name", "Category", "Type", "Preview", "HtmlCode", "CssCode", "JsCode", "Description", "Tags", "Framework", "Views", "Likes", "CreatedAt", "UpdatedAt")
 VALUES (
     'Filter Sidebar',
-    'Clean sidebar component for filtering and navigation with collapsible sections.',
-    'Sidebar',
+    'sidebar',
+    'filter-sidebar',
+    'https://images.unsplash.com/photo-1557683316-973673baf926?w=800&h=200&fit=crop',
     '<aside class="filter-sidebar">
   <div class="sidebar-header">
     <h3>Filters</h3>
@@ -1208,10 +1221,11 @@ VALUES (
     });
   });
 });',
+    'Clean sidebar component for filtering and navigation with collapsible sections.',
     'sidebar, filter, navigation, ui, component',
+    'html',
     0,
     0,
-    false,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 ) ON CONFLICT DO NOTHING;
