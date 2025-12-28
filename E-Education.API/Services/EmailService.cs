@@ -95,15 +95,30 @@ namespace E_Education.API.Services
                     </html>"
                 };
 
-                using (var client = new SmtpClient())
+                try
                 {
-                    await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
-                    await client.AuthenticateAsync(smtpUser, smtpPassword);
-                    await client.SendAsync(message);
-                    await client.DisconnectAsync(true);
+                    using (var client = new SmtpClient())
+                    {
+                        _logger.LogInformation($"Attempting to connect to SMTP server: {smtpHost}:{smtpPort}");
+                        await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
+                        _logger.LogInformation("SMTP connected successfully");
+                        
+                        _logger.LogInformation($"Attempting to authenticate as: {smtpUser}");
+                        await client.AuthenticateAsync(smtpUser, smtpPassword);
+                        _logger.LogInformation("SMTP authenticated successfully");
+                        
+                        _logger.LogInformation($"Sending email to: {email}");
+                        await client.SendAsync(message);
+                        _logger.LogInformation($"Email sent successfully to {email}");
+                        
+                        await client.DisconnectAsync(true);
+                    }
                 }
-
-                _logger.LogInformation($"Verification email sent to {email}");
+                catch (Exception smtpEx)
+                {
+                    _logger.LogError(smtpEx, $"SMTP Error - Host: {smtpHost}, Port: {smtpPort}, User: {smtpUser}, Error: {smtpEx.Message}");
+                    throw;
+                }
             }
             catch (Exception ex)
             {

@@ -82,12 +82,14 @@ namespace E_Education.API.Services
                 // Send verification email
                 try
                 {
+                    _logger?.LogInformation($"Attempting to send verification email to: {user.Email}");
                     await emailService.SendVerificationEmailAsync(user.Email, user.Username, verificationToken);
+                    _logger?.LogInformation($"Verification email process completed for: {user.Email}");
                 }
                 catch (Exception ex)
                 {
                     // Log but don't fail registration
-                    _logger?.LogError(ex, "Failed to send verification email");
+                    _logger?.LogError(ex, $"Failed to send verification email to {user.Email}. Error: {ex.Message}. Inner: {ex.InnerException?.Message}");
                 }
             }
 
