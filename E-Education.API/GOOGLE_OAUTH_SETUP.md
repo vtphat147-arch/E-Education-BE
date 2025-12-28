@@ -54,7 +54,20 @@ Trong frontend, bạn cần tích hợp Google Sign-In JavaScript library:
 
 ## Kiểm tra:
 
-- Test Google Login trên localhost trước
-- Đảm bảo redirect URI khớp chính xác
-- Kiểm tra OAuth consent screen đã được phê duyệt (nếu cần)
+- ✅ **JavaScript origins** phải khớp chính xác với domain frontend
+- ✅ **Redirect URIs** có thể giống JavaScript origins (nếu dùng ID token flow)
+- ✅ Test Google Login trên localhost trước
+- ✅ Kiểm tra OAuth consent screen đã được phê duyệt (nếu cần)
+
+## Cấu hình của bạn (từ ảnh):
+
+✅ **Authorized JavaScript origins:**
+- `http://localhost:5173` ✓ (Đúng cho development)
+- `https://e-education-beta.vercel.app` ✓ (Đúng cho production)
+
+✅ **Authorized redirect URIs:**
+- `http://localhost:5173` ✓ (OK)
+- `https://e-education-beta.vercel.app` ✓ (OK)
+
+**Kết luận**: Setup của bạn đã **CHUẨN**! Có thể tiếp tục test Google Login.
 
