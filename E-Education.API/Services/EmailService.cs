@@ -120,7 +120,9 @@ namespace E_Education.API.Services
 
         private string GetVerificationUrl(string token)
         {
-            var frontendUrl = _configuration["FrontendUrl"] ?? "http://localhost:5173";
+            var frontendUrl = _configuration["FrontendUrl"] 
+                ?? Environment.GetEnvironmentVariable("FRONTEND_URL") 
+                ?? "https://e-education-beta.vercel.app";
             return $"{frontendUrl}/verify-email?token={token}";
         }
     }
