@@ -199,8 +199,8 @@ namespace E_Education.API.Controllers
                         c.Likes,
                         c.CreatedAt,
                         c.UpdatedAt,
-                        CommentsCount = c.Comments.Count,
-                        FavoritesCount = c.Favorites.Count
+                        CommentsCount = _context.Comments.Count(co => co.ComponentId == c.Id),
+                        FavoritesCount = _context.Favorites.Count(f => f.ComponentId == c.Id)
                     })
                     .ToListAsync();
 
