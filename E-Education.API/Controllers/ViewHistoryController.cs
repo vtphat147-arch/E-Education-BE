@@ -55,9 +55,14 @@ namespace E_Education.API.Controllers
                             v.Component.Category,
                             v.Component.Type,
                             v.Component.Preview,
+                            v.Component.HtmlCode,
+                            v.Component.CssCode,
+                            v.Component.JsCode,
                             v.Component.Description,
                             v.Component.Views,
-                            v.Component.Likes
+                            v.Component.Likes,
+                            v.Component.Tags,
+                            v.Component.Framework
                         },
                         v.ViewedAt
                     })
