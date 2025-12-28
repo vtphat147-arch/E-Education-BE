@@ -750,6 +750,7 @@ VALUES (
   margin: 0;
   font-size: 0.9rem;
 }',
+    NULL,
     'Simple and elegant footer design perfect for landing pages.',
     'footer, minimal, simple, clean',
     'html',
@@ -840,6 +841,7 @@ VALUES (
   font-weight: 600;
   padding: 0.5rem 0.75rem;
 }',
+    NULL,
     'Elegant breadcrumb navigation component with icons and separators.',
     'navigation, breadcrumb, menu, links',
     'html',
