@@ -1,15 +1,25 @@
 # Hướng dẫn Setup Database
 
-## Bước 1: Tạo bảng và Insert dữ liệu
+## ⚠️ QUAN TRỌNG: Phải chạy theo thứ tự!
 
-Chạy file SQL: `render-design-components-setup.sql`
-
-### Cách chạy trên Render:
+### Bước 1: Tạo các bảng Users và Authentication (CHẠY TRƯỚC!)
 
 1. Vào **Render Dashboard** → Chọn **PostgreSQL database**
 2. Click tab **"Query"** hoặc **"SQL Editor"**
-3. Copy toàn bộ nội dung file `render-design-components-setup.sql`
+3. Copy **TOÀN BỘ** nội dung file `render-users-setup.sql`
 4. Paste và click **"Run"**
+
+**File này sẽ tạo:**
+- ✅ Bảng `Users` (người dùng)
+- ✅ Bảng `EmailVerifications` (xác thực email)
+- ✅ Bảng `Favorites` (yêu thích)
+- ✅ Bảng `Comments` (bình luận)
+- ✅ Bảng `ComponentViewHistory` (lịch sử xem)
+- ✅ Admin user mặc định: `admin@e-education.com` / `Admin123!`
+
+1. Vẫn ở trong **SQL Editor** của Render
+2. Copy **TOÀN BỘ** nội dung file `render-design-components-setup.sql`
+3. Paste và click **"Run"**
 
 ### Hoặc dùng psql:
 
@@ -29,7 +39,7 @@ psql "your_database_url" -f render-design-components-setup.sql
    - Card Layout (layout)
    - Modern Typography (typography)
 
-## Bước 2: Thêm nhiều components đẹp hơn (Tùy chọn)
+### Bước 3: Thêm nhiều components đẹp hơn (Tùy chọn)
 
 Sau khi chạy file setup, bạn có thể chạy thêm file `render-design-components-insert-more.sql` để thêm **14+ components premium**:
 
