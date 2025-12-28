@@ -13,22 +13,26 @@ namespace E_Education.API.Services
     public interface IAuthService
     {
         Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto);
+        Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto, IEmailService? emailService);
         Task<AuthResponseDto> LoginAsync(LoginDto loginDto);
         string GenerateJwtToken(User user);
+        Task<bool> VerifyEmailTokenAsync(string token);
     }
 
     public class AuthService : IAuthService
     {
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<AuthService>? _logger;
 
-        public AuthService(ApplicationDbContext context, IConfiguration configuration)
+        public AuthService(ApplicationDbContext context, IConfiguration configuration, ILogger<AuthService>? logger = null)
         {
             _context = context;
             _configuration = configuration;
+            _logger = logger;
         }
 
-        public async Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto)
+        public async Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto, IEmailService? emailService = null)
         {
             // Check if email already exists
             if (await _context.Users.AnyAsync(u => u.Email == registerDto.Email))
@@ -52,12 +56,40 @@ namespace E_Education.API.Services
                 Username = registerDto.Username,
                 PasswordHash = passwordHash,
                 FullName = registerDto.FullName,
+                IsEmailVerified = false, // Email needs verification
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
+
+            // Generate email verification token
+            if (emailService != null)
+            {
+                var verificationToken = Guid.NewGuid().ToString() + Guid.NewGuid().ToString();
+                var verification = new EmailVerification
+                {
+                    UserId = user.Id,
+                    Token = verificationToken,
+                    ExpiresAt = DateTime.UtcNow.AddDays(1),
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.EmailVerifications.Add(verification);
+                await _context.SaveChangesAsync();
+
+                // Send verification email
+                try
+                {
+                    await emailService.SendVerificationEmailAsync(user.Email, user.Username, verificationToken);
+                }
+                catch (Exception ex)
+                {
+                    // Log but don't fail registration
+                    _logger?.LogError(ex, "Failed to send verification email");
+                }
+            }
 
             // Generate token
             var token = GenerateJwtToken(user);
@@ -141,6 +173,35 @@ namespace E_Education.API.Services
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        // Overload without email service for backward compatibility
+        public async Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto)
+        {
+            return await RegisterAsync(registerDto, null);
+        }
+
+        public async Task<bool> VerifyEmailTokenAsync(string token)
+        {
+            var verification = await _context.EmailVerifications
+                .Include(v => v.User)
+                .FirstOrDefaultAsync(v => v.Token == token && !v.IsUsed);
+
+            if (verification == null)
+            {
+                return false;
+            }
+
+            if (verification.ExpiresAt < DateTime.UtcNow)
+            {
+                return false;
+            }
+
+            verification.IsUsed = true;
+            verification.User.IsEmailVerified = true;
+            await _context.SaveChangesAsync();
+
+            return true;
         }
     }
 }

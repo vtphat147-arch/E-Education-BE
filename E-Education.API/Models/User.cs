@@ -31,6 +31,14 @@ namespace E_Education.API.Models
 
         public bool IsAdmin { get; set; } = false;
 
+        public bool IsEmailVerified { get; set; } = false;
+
+        [MaxLength(255)]
+        public string? GoogleId { get; set; }
+
+        [MaxLength(500)]
+        public string? GoogleEmail { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

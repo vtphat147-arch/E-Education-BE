@@ -43,6 +43,8 @@ builder.Services.AddAuthorization();
 
 // Register services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 
 // Database Configuration
@@ -118,18 +120,20 @@ app.MapControllers();
 // Health check endpoint
 app.MapGet("/", () => new { message = "UI Components API is running", status = "ok" });
 
-// Đảm bảo database được tạo
+// Đảm bảo database được tạo và seed data
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
         context.Database.EnsureCreated();
+        // Initialize database with default admin user
+        E_Education.API.Data.DbInitializer.Initialize(context, logger);
     }
     catch (Exception ex)
     {
         // Log error nhưng không dừng app
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "Error ensuring database is created");
     }
 }

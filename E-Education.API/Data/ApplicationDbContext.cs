@@ -15,6 +15,7 @@ namespace E_Education.API.Data
         public DbSet<Favorite> Favorites { get; set; }
         public DbSet<Comment> Comments { get; set; }
         public DbSet<ComponentViewHistory> ComponentViewHistory { get; set; }
+        public DbSet<EmailVerification> EmailVerifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -33,6 +34,18 @@ namespace E_Education.API.Data
                 entity.ToTable("Users");
                 entity.HasIndex(e => e.Email).IsUnique();
                 entity.HasIndex(e => e.Username).IsUnique();
+                entity.HasIndex(e => e.GoogleId);
+            });
+
+            modelBuilder.Entity<EmailVerification>(entity =>
+            {
+                entity.ToTable("EmailVerifications");
+                entity.HasIndex(e => e.Token).IsUnique();
+                entity.HasIndex(e => e.UserId);
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Favorite>(entity =>
