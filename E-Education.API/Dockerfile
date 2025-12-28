@@ -18,3 +18,4 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "E-Education.API.dll"]
 
+
