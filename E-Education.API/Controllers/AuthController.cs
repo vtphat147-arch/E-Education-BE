@@ -84,21 +84,28 @@ namespace E_Education.API.Controllers
         {
             try
             {
+                if (string.IsNullOrEmpty(googleLoginDto.IdToken))
+                {
+                    return BadRequest(new { message = "ID token is required" });
+                }
+
                 var result = await _googleAuthService.AuthenticateAsync(googleLoginDto.IdToken);
                 return Ok(result);
             }
             catch (UnauthorizedAccessException ex)
             {
+                _logger.LogWarning(ex, "Google login unauthorized");
                 return Unauthorized(new { message = ex.Message });
             }
             catch (InvalidOperationException ex)
             {
+                _logger.LogError(ex, "Google login invalid operation");
                 return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during Google login");
-                return StatusCode(500, new { message = "An error occurred during Google login" });
+                _logger.LogError(ex, "Error during Google login: {Message}", ex.Message);
+                return BadRequest(new { message = $"Error during Google login: {ex.Message}" });
             }
         }
 

@@ -32,10 +32,15 @@ namespace E_Education.API.Services
         {
             try
             {
+                if (string.IsNullOrEmpty(idToken))
+                {
+                    throw new InvalidOperationException("ID token is required");
+                }
+
                 var clientId = _configuration["GoogleOAuth:ClientId"];
                 if (string.IsNullOrEmpty(clientId))
                 {
-                    throw new InvalidOperationException("Google OAuth ClientId is not configured");
+                    throw new InvalidOperationException("Google OAuth ClientId is not configured. Please set GOOGLE_OAUTH__CLIENT_ID environment variable.");
                 }
 
                 // Verify Google ID token
@@ -44,7 +49,19 @@ namespace E_Education.API.Services
                     Audience = new[] { clientId }
                 };
 
-                var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
+                GoogleJsonWebSignature.Payload payload;
+                try
+                {
+                    payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
+                }
+                catch (InvalidJwtException ex)
+                {
+                    throw new UnauthorizedAccessException($"Invalid Google token: {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    throw new UnauthorizedAccessException($"Token validation failed: {ex.Message}");
+                }
 
                 // Check if user exists by Google ID
                 var user = await _context.Users
