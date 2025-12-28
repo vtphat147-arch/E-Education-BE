@@ -301,7 +301,7 @@ namespace E_Education.API.Controllers
                         return Ok(new { likes = component.Likes, isLiked = true, message = "Component liked" });
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     await transaction.RollbackAsync();
                     throw;
