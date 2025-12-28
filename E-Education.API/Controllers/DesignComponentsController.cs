@@ -125,9 +125,6 @@ namespace E_Education.API.Controllers
                 return NotFound();
             }
 
-            // Increment views
-            component.Views++;
-            
             // Track view history if user is authenticated (only once per user-component, update ViewedAt if exists)
             var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int userId))
@@ -135,13 +132,11 @@ namespace E_Education.API.Controllers
                 var existingHistory = await _context.ComponentViewHistory
                     .FirstOrDefaultAsync(v => v.UserId == userId && v.ComponentId == id);
                 
-                if (existingHistory != null)
+                if (existingHistory == null)
                 {
-                    // Update ViewedAt if already exists
-                    existingHistory.ViewedAt = DateTime.UtcNow;
-                }
-                else
-                {
+                    // Only increment views and create history if this is the first time viewing
+                    component.Views++;
+                    
                     // Create new history record
                     var viewHistory = new ComponentViewHistory
                     {
@@ -151,6 +146,17 @@ namespace E_Education.API.Controllers
                     };
                     _context.ComponentViewHistory.Add(viewHistory);
                 }
+                else
+                {
+                    // Update ViewedAt if already exists (but don't increment views)
+                    existingHistory.ViewedAt = DateTime.UtcNow;
+                }
+            }
+            else
+            {
+                // For non-authenticated users, increment views on every request
+                // (could be improved with session/cookie tracking)
+                component.Views++;
             }
 
             await _context.SaveChangesAsync();
