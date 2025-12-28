@@ -1191,8 +1191,8 @@ VALUES (
   
   // Clear all filters
   document.querySelector(".clear-all").addEventListener("click", function() {
-    document.querySelectorAll("input[type=\'checkbox\']").forEach(cb => cb.checked = false);
-    document.querySelectorAll("input[type=\'radio\']").forEach(rb => rb.checked = false);
+    document.querySelectorAll("input[type=\"checkbox\"]").forEach(cb => cb.checked = false);
+    document.querySelectorAll("input[type=\"radio\"]").forEach(rb => rb.checked = false);
   });
   
   // Star rating filter
