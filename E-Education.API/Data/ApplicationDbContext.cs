@@ -16,6 +16,7 @@ namespace E_Education.API.Data
         public DbSet<Comment> Comments { get; set; }
         public DbSet<ComponentViewHistory> ComponentViewHistory { get; set; }
         public DbSet<EmailVerification> EmailVerifications { get; set; }
+        public DbSet<ComponentLike> ComponentLikes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

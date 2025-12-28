@@ -128,17 +128,29 @@ namespace E_Education.API.Controllers
             // Increment views
             component.Views++;
             
-            // Track view history if user is authenticated
+            // Track view history if user is authenticated (only once per user-component, update ViewedAt if exists)
             var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int userId))
             {
-                var viewHistory = new ComponentViewHistory
+                var existingHistory = await _context.ComponentViewHistory
+                    .FirstOrDefaultAsync(v => v.UserId == userId && v.ComponentId == id);
+                
+                if (existingHistory != null)
                 {
-                    UserId = userId,
-                    ComponentId = id,
-                    ViewedAt = DateTime.UtcNow
-                };
-                _context.ComponentViewHistory.Add(viewHistory);
+                    // Update ViewedAt if already exists
+                    existingHistory.ViewedAt = DateTime.UtcNow;
+                }
+                else
+                {
+                    // Create new history record
+                    var viewHistory = new ComponentViewHistory
+                    {
+                        UserId = userId,
+                        ComponentId = id,
+                        ViewedAt = DateTime.UtcNow
+                    };
+                    _context.ComponentViewHistory.Add(viewHistory);
+                }
             }
 
             await _context.SaveChangesAsync();
@@ -216,20 +228,68 @@ namespace E_Education.API.Controllers
             return NoContent();
         }
 
-        // POST: api/components/5/like
+        // POST: api/components/5/like (Toggle like/unlike)
         [HttpPost("{id}/like")]
+        [Authorize]
         public async Task<IActionResult> LikeComponent(int id)
         {
+            var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(new { message = "User not authenticated" });
+            }
+
             var component = await _context.DesignComponents.FindAsync(id);
             if (component == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Component not found" });
             }
 
-            component.Likes++;
-            await _context.SaveChangesAsync();
+            // Check if user already liked this component
+            var existingLike = await _context.ComponentLikes
+                .FirstOrDefaultAsync(l => l.UserId == userId && l.ComponentId == id);
 
-            return Ok(new { likes = component.Likes });
+            if (existingLike != null)
+            {
+                // Unlike: Remove like record and decrease likes count
+                _context.ComponentLikes.Remove(existingLike);
+                component.Likes = Math.Max(0, component.Likes - 1);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { likes = component.Likes, isLiked = false, message = "Component unliked" });
+            }
+            else
+            {
+                // Like: Create like record and increase likes count
+                var like = new ComponentLike
+                {
+                    UserId = userId,
+                    ComponentId = id,
+                    LikedAt = DateTime.UtcNow
+                };
+                _context.ComponentLikes.Add(like);
+                component.Likes++;
+                await _context.SaveChangesAsync();
+
+                return Ok(new { likes = component.Likes, isLiked = true, message = "Component liked" });
+            }
+        }
+
+        // GET: api/components/5/like/check - Check if user liked this component
+        [HttpGet("{id}/like/check")]
+        [Authorize]
+        public async Task<IActionResult> CheckLike(int id)
+        {
+            var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Ok(new { isLiked = false });
+            }
+
+            var isLiked = await _context.ComponentLikes
+                .AnyAsync(l => l.UserId == userId && l.ComponentId == id);
+
+            return Ok(new { isLiked });
         }
 
         // DELETE: api/components/5
