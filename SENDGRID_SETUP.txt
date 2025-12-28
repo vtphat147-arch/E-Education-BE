@@ -1,0 +1,38 @@
+SENDGRID SETUP GUIDE
+===================
+
+1. ĐĂNG KÝ SENDGRID (MIỄN PHÍ):
+   - Vào https://signup.sendgrid.com/
+   - Đăng ký tài khoản (free plan: 100 emails/ngày)
+   - Verify email của bạn
+
+2. TẠO API KEY:
+   - Vào SendGrid Dashboard
+   - Settings > API Keys
+   - Create API Key
+   - Chọn "Full Access" hoặc "Mail Send" permission
+   - Copy API Key (chỉ hiện 1 lần!)
+
+3. VERIFY SENDER (QUAN TRỌNG):
+   - Settings > Sender Authentication
+   - Click "Verify a Single Sender"
+   - Điền thông tin email của bạn
+   - Verify email đó
+   - Dùng email này cho SMTP__FROMEMAIL
+
+4. SETUP TRÊN RENDER:
+   
+   Environment Variables:
+   
+   SMTP__HOST = smtp.sendgrid.net
+   SMTP__PORT = 587
+   SMTP__USER = apikey
+   SMTP__PASSWORD = [PASTE SENDGRID API KEY Ở ĐÂY]
+   SMTP__FROMEMAIL = [EMAIL BẠN ĐÃ VERIFY TRÊN SENDGRID]
+   SMTP__FROMNAME = E-Education
+
+LƯU Ý:
+- SMTP__USER phải là "apikey" (chữ thường, không phải email)
+- SMTP__PASSWORD là SendGrid API Key (dài, không phải password email)
+- SMTP__FROMEMAIL phải là email đã verify trên SendGrid
+

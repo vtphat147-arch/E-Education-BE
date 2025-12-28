@@ -31,7 +31,7 @@ namespace E_Education.API.Services
                 // Try to get from configuration first, then fallback to environment variables
                 var smtpHost = smtpSettings["Host"] 
                     ?? Environment.GetEnvironmentVariable("SMTP__HOST") 
-                    ?? "smtp.gmail.com";
+                    ?? "smtp.sendgrid.net";
                     
                 var smtpPortStr = smtpSettings["Port"] 
                     ?? Environment.GetEnvironmentVariable("SMTP__PORT") 
@@ -39,14 +39,15 @@ namespace E_Education.API.Services
                 var smtpPort = int.Parse(smtpPortStr);
                 
                 var smtpUser = smtpSettings["User"] 
-                    ?? Environment.GetEnvironmentVariable("SMTP__USER");
+                    ?? Environment.GetEnvironmentVariable("SMTP__USER")
+                    ?? "apikey"; // Default for SendGrid
                     
                 var smtpPassword = smtpSettings["Password"] 
                     ?? Environment.GetEnvironmentVariable("SMTP__PASSWORD");
                     
                 var fromEmail = smtpSettings["FromEmail"] 
                     ?? Environment.GetEnvironmentVariable("SMTP__FROMEMAIL") 
-                    ?? smtpUser;
+                    ?? "noreply@e-education.com";
                     
                 var fromName = smtpSettings["FromName"] 
                     ?? Environment.GetEnvironmentVariable("SMTP__FROMNAME") 
