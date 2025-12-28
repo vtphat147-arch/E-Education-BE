@@ -100,21 +100,20 @@ namespace E_Education.API.Services
                     using (var client = new SmtpClient())
                     {
                         // Set timeout
-                        client.Timeout = 10000; // 10 seconds
+                        client.Timeout = 15000; // 15 seconds
                         
-                        // Try SSL first (port 465), fallback to StartTLS (port 587)
+                        _logger.LogInformation($"Connecting to SMTP server: {smtpHost}:{smtpPort}");
+                        
+                        // Use StartTLS for SendGrid (port 587) or most SMTP servers
+                        SecureSocketOptions socketOptions = SecureSocketOptions.StartTls;
                         if (smtpPort == 465)
                         {
-                            _logger.LogInformation($"Connecting with SSL to {smtpHost}:{smtpPort}");
-                            await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.SslOnConnect);
-                        }
-                        else
-                        {
-                            _logger.LogInformation($"Connecting with StartTLS to {smtpHost}:{smtpPort}");
-                            await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
+                            socketOptions = SecureSocketOptions.SslOnConnect;
                         }
                         
+                        await client.ConnectAsync(smtpHost, smtpPort, socketOptions);
                         _logger.LogInformation("SMTP connected successfully");
+                        
                         _logger.LogInformation($"Authenticating as: {smtpUser}");
                         await client.AuthenticateAsync(smtpUser, smtpPassword);
                         _logger.LogInformation("SMTP authenticated successfully");
@@ -128,7 +127,7 @@ namespace E_Education.API.Services
                 }
                 catch (Exception smtpEx)
                 {
-                    _logger.LogError(smtpEx, $"SMTP Error: {smtpEx.Message}. Inner: {smtpEx.InnerException?.Message}");
+                    _logger.LogError(smtpEx, $"SMTP Error: {smtpEx.Message}. Inner: {smtpEx.InnerException?.Message}. StackTrace: {smtpEx.StackTrace}");
                     throw;
                 }
             }
