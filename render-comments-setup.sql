@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS "Comments" (
 CREATE INDEX IF NOT EXISTS "IX_Comments_UserId" ON "Comments" ("UserId");
 CREATE INDEX IF NOT EXISTS "IX_Comments_ComponentId" ON "Comments" ("ComponentId");
 CREATE INDEX IF NOT EXISTS "IX_Comments_CreatedAt" ON "Comments" ("CreatedAt" DESC);
+CREATE INDEX IF NOT EXISTS "IX_Comments_UserId_ComponentId" ON "Comments" ("UserId", "ComponentId");
 
 -- Add comments to some components for testing (optional)
 -- You can remove this section if you don't want sample data
