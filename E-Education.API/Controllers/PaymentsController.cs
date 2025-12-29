@@ -208,12 +208,12 @@ namespace E_Education.API.Controllers
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Add("x-client-id", payOSClientId);
                 httpClient.DefaultRequestHeaders.Add("x-api-key", payOSApiKey);
-                httpClient.DefaultRequestHeaders.Add("Content-Type", "application/json");
 
                 var jsonContent = JsonSerializer.Serialize(requestBody, options);
+                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
                 var response = await httpClient.PostAsync(
                     "https://api.payos.vn/v2/payment-requests",
-                    new StringContent(jsonContent, Encoding.UTF8, "application/json"));
+                    content);
 
                 var responseContent = await response.Content.ReadAsStringAsync();
 
