@@ -78,20 +78,21 @@ namespace E_Education.API.Controllers
         {
             try
             {
-                // Use raw SQL to avoid EF Core mapping issues with PostgreSQL case sensitivity
                 var plans = await _context.VipPlans
-                    .FromSqlRaw(@"SELECT ""Id"", ""Name"", ""Days"", ""Price"", ""IsActive"", ""CreatedAt"" 
-                                FROM ""VipPlans"" 
-                                WHERE ""IsActive"" = TRUE 
-                                ORDER BY ""Days""")
+                    .Where(p => p.IsActive)
+                    .OrderBy(p => p.Days)
                     .ToListAsync();
                 
                 return Ok(plans);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving VIP plans");
-                return StatusCode(500, new { message = "Error retrieving VIP plans" });
+                _logger.LogError(ex, "Error retrieving VIP plans: {Error}", ex.Message);
+                if (ex.InnerException != null)
+                {
+                    _logger.LogError(ex.InnerException, "Inner exception: {Error}", ex.InnerException.Message);
+                }
+                return StatusCode(500, new { message = "Error retrieving VIP plans", error = ex.Message });
             }
         }
 
