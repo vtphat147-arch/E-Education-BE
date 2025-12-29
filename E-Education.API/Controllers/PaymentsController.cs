@@ -78,9 +78,12 @@ namespace E_Education.API.Controllers
         {
             try
             {
+                // Use raw SQL to avoid EF Core mapping issues with PostgreSQL case sensitivity
                 var plans = await _context.VipPlans
-                    .Where(p => p.IsActive)
-                    .OrderBy(p => p.Days)
+                    .FromSqlRaw(@"SELECT ""Id"", ""Name"", ""Days"", ""Price"", ""IsActive"", ""CreatedAt"" 
+                                FROM ""VipPlans"" 
+                                WHERE ""IsActive"" = TRUE 
+                                ORDER BY ""Days""")
                     .ToListAsync();
                 
                 return Ok(plans);
