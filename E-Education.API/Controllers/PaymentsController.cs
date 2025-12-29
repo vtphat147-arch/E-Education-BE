@@ -78,6 +78,17 @@ namespace E_Education.API.Controllers
         {
             try
             {
+                // Ensure table exists
+                await _context.Database.ExecuteSqlRawAsync(@"
+                    CREATE TABLE IF NOT EXISTS ""VipPlans"" (
+                        ""Id"" SERIAL PRIMARY KEY,
+                        ""Name"" VARCHAR(100) NOT NULL,
+                        ""Days"" INTEGER NOT NULL,
+                        ""Price"" DECIMAL(18,2) NOT NULL,
+                        ""IsActive"" BOOLEAN NOT NULL DEFAULT TRUE,
+                        ""CreatedAt"" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )");
+
                 var plans = await _context.VipPlans
                     .Where(p => p.IsActive)
                     .OrderBy(p => p.Days)
