@@ -172,37 +172,33 @@ namespace E_Education.API.Controllers
                 }
 
                 // Prepare PayOS payment request according to PayOS API v2
-                // Note: PayOS API v2 uses "item" (singular object) not "items" (array)
-                var payOSItem = new
+                // PayOS API v2 uses "items" (array) in the request body
+                var payOSItems = new[]
                 {
-                    name = plan.Name,
-                    quantity = 1,
-                    price = (int)plan.Price
+                    new
+                    {
+                        name = plan.Name,
+                        quantity = 1,
+                        price = (int)plan.Price
+                    }
                 };
 
-                var payOSRequest = new
-                {
-                    orderCode = payOSOrderCode,
-                    amount = (int)plan.Price,
-                    description = $"Nâng cấp {plan.Name}",
-                    item = payOSItem,  // PayOS API v2 uses "item" (singular), not "items"
-                    cancelUrl = cancelUrl,
-                    returnUrl = returnUrl
-                };
+                var amount = (int)plan.Price;
+                var description = $"Nâng cấp {plan.Name}";
 
-                // Create signature: HMACSHA256 of data string with ChecksumKey
-                var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-                var dataString = JsonSerializer.Serialize(payOSRequest, options);
-                var signature = CreatePayOSSignature(dataString, payOSChecksumKey);
+                // Create signature: PayOS requires signature from query string format (alphabetically sorted)
+                // Format: amount=$amount&cancelUrl=$cancelUrl&description=$description&orderCode=$orderCode&returnUrl=$returnUrl
+                var signatureData = $"amount={amount}&cancelUrl={Uri.EscapeDataString(cancelUrl)}&description={Uri.EscapeDataString(description)}&orderCode={payOSOrderCode}&returnUrl={Uri.EscapeDataString(returnUrl)}";
+                var signature = CreatePayOSSignature(signatureData, payOSChecksumKey);
 
                 var requestBody = new
                 {
-                    orderCode = payOSRequest.orderCode,
-                    amount = payOSRequest.amount,
-                    description = payOSRequest.description,
-                    item = payOSRequest.item,  // PayOS API v2 uses "item" (singular), not "items"
-                    cancelUrl = payOSRequest.cancelUrl,
-                    returnUrl = payOSRequest.returnUrl,
+                    orderCode = payOSOrderCode,
+                    amount = amount,
+                    description = description,
+                    items = payOSItems,  // PayOS API v2 uses "items" (array)
+                    cancelUrl = cancelUrl,
+                    returnUrl = returnUrl,
                     signature = signature
                 };
 
@@ -215,10 +211,10 @@ namespace E_Education.API.Controllers
                 var jsonContent = JsonSerializer.Serialize(requestBody, options);
                 var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
                 
-                // PayOS API endpoint - try different URLs if DNS fails
+                // PayOS API endpoint - Production: https://api-merchant.payos.vn/v2/payment-requests
                 var payOSApiUrl = Environment.GetEnvironmentVariable("PayOS__ApiUrl") 
                     ?? _configuration["PayOS:ApiUrl"]
-                    ?? "https://api.payos.vn/v2/payment-requests";
+                    ?? "https://api-merchant.payos.vn/v2/payment-requests";
                 
                 _logger.LogInformation("Calling PayOS API: {Url}", payOSApiUrl);
                 _logger.LogInformation("PayOS ClientId: {ClientId}", payOSClientId?.Substring(0, Math.Min(8, payOSClientId?.Length ?? 0)) + "...");
