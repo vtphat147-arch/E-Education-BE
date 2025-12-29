@@ -14,7 +14,7 @@ RUN dotnet build E-Education.API.csproj -c Release -o /app/build --no-restore
 # Publish
 FROM build AS publish
 WORKDIR /src/E-Education.API
-RUN dotnet publish E-Education.API.csproj -c Release -o /app/publish /p:UseAppHost=false --no-restore --no-build
+RUN dotnet publish E-Education.API.csproj -c Release -o /app/publish /p:UseAppHost=false --no-restore
 
 # Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
