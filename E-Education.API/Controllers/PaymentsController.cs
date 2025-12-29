@@ -76,12 +76,22 @@ namespace E_Education.API.Controllers
         [AllowAnonymous]
         public async Task<ActionResult> GetPlans()
         {
-            var plans = await _context.VipPlans
-                .Where(p => p.IsActive)
-                .OrderBy(p => p.Days)
-                .ToListAsync();
+            try
+            {
+                var plans = await _context.VipPlans
+                    .Where(p => p.IsActive)
+                    .OrderBy(p => p.Days)
+                    .ToListAsync();
 
-            return Ok(plans);
+                _logger.LogInformation($"Retrieved {plans.Count} active VIP plans");
+                
+                return Ok(plans);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving VIP plans");
+                return StatusCode(500, new { message = "Error retrieving VIP plans", error = ex.Message });
+            }
         }
 
         // POST: api/payments/create-order
