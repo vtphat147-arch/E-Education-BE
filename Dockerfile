@@ -6,7 +6,7 @@ WORKDIR /src
 COPY E-Education.API/*.csproj E-Education.API/
 RUN dotnet restore E-Education.API/E-Education.API.csproj --verbosity quiet
 
-# Copy source and publish in one step
+# Copy source and publish
 COPY E-Education.API/ E-Education.API/
 WORKDIR /src/E-Education.API
 RUN dotnet publish E-Education.API.csproj -c Release -o /app/publish /p:UseAppHost=false --no-restore -v quiet
@@ -16,7 +16,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 EXPOSE 8080
 
-COPY --from=publish /app/publish .
+COPY --from=build /app/publish .
 
 ENTRYPOINT ["dotnet", "E-Education.API.dll"]
 
