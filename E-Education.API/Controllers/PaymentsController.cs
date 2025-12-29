@@ -388,11 +388,26 @@ namespace E_Education.API.Controllers
                     return BadRequest(new { message = "Invalid signature" });
                 }
 
-                // Extract order code and status
-                var orderCode = dataElement.GetProperty("orderCode").GetInt64().ToString();
-                var status = dataElement.GetProperty("status").GetString();
+                // Extract order code from data
+                if (!dataElement.TryGetProperty("orderCode", out var orderCodeElement))
+                {
+                    _logger.LogWarning("Invalid webhook format: missing orderCode in data");
+                    return BadRequest(new { message = "Invalid webhook format: missing orderCode" });
+                }
 
-                _logger.LogInformation("PayOS webhook received: orderCode={OrderCode}, status={Status}", orderCode, status);
+                var orderCode = orderCodeElement.GetInt64().ToString();
+                
+                // Check success status and code in data
+                var success = request.TryGetProperty("success", out var successElement) && successElement.GetBoolean();
+                var dataCode = dataElement.TryGetProperty("code", out var dataCodeElement) 
+                    ? dataCodeElement.GetString() 
+                    : null;
+                var dataDesc = dataElement.TryGetProperty("desc", out var dataDescElement) 
+                    ? dataDescElement.GetString() 
+                    : null;
+
+                _logger.LogInformation("PayOS webhook received: orderCode={OrderCode}, success={Success}, dataCode={DataCode}, dataDesc={DataDesc}", 
+                    orderCode, success, dataCode, dataDesc);
 
                 // Find payment by PayOS order code
                 var payment = await _context.Payments
@@ -412,8 +427,9 @@ namespace E_Education.API.Controllers
                     return Ok(new { code = "00", desc = "Already processed" });
                 }
 
-                // Update payment status based on PayOS status
-                if (status == "PAID")
+                // Update payment status based on PayOS response
+                // Success = true and data.code = "00" means payment was successful (PAID)
+                if (success && dataCode == "00")
                 {
                     payment.Status = "completed";
                     payment.CompletedAt = DateTime.UtcNow;
@@ -441,11 +457,13 @@ namespace E_Education.API.Controllers
 
                     _logger.LogInformation("VIP activated for user {UserId}, expires at {ExpiresAt}", user.Id, newExpiresAt);
                 }
-                else if (status == "CANCELLED" || status == "EXPIRED")
+                else
                 {
-                    payment.Status = status.ToLower();
+                    // Payment failed, cancelled, or expired
+                    payment.Status = "failed";
                     await _context.SaveChangesAsync();
-                    _logger.LogInformation("Payment {Status}: {OrderCode}", status, orderCode);
+                    _logger.LogInformation("Payment failed/cancelled for order code: {OrderCode}, code: {Code}, desc: {Desc}", 
+                        orderCode, dataCode, dataDesc);
                 }
 
                 return Ok(new { code = "00", desc = "Success" });
