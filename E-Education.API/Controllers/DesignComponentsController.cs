@@ -177,11 +177,11 @@ namespace E_Education.API.Controllers
             }
 
             // Track view history if user is authenticated (only once per user-component, update ViewedAt if exists)
-            var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int userId))
+            if (userId.HasValue)
             {
+                int userIdValue = userId.Value;
                 var existingHistory = await _context.ComponentViewHistory
-                    .FirstOrDefaultAsync(v => v.UserId == userId && v.ComponentId == id);
+                    .FirstOrDefaultAsync(v => v.UserId == userIdValue && v.ComponentId == id);
                 
                 if (existingHistory == null)
                 {
@@ -191,7 +191,7 @@ namespace E_Education.API.Controllers
                     // Create new history record
                     var viewHistory = new ComponentViewHistory
                     {
-                        UserId = userId,
+                        UserId = userIdValue,
                         ComponentId = id,
                         ViewedAt = DateTime.UtcNow
                     };

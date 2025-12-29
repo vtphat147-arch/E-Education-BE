@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using E_Education.API.Data;
+using E_Education.API.Models;
 using E_Education.API.Models.DTOs;
 
 namespace E_Education.API.Controllers
