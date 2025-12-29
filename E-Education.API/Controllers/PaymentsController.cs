@@ -78,6 +78,9 @@ namespace E_Education.API.Controllers
         {
             try
             {
+                var allPlans = await _context.VipPlans.ToListAsync();
+                _logger.LogInformation($"Total plans in database: {allPlans.Count}");
+                
                 var plans = await _context.VipPlans
                     .Where(p => p.IsActive)
                     .OrderBy(p => p.Days)
@@ -85,6 +88,12 @@ namespace E_Education.API.Controllers
 
                 _logger.LogInformation($"Retrieved {plans.Count} active VIP plans");
                 
+                if (plans.Count == 0)
+                {
+                    _logger.LogWarning("No active VIP plans found. All plans: {Count}", allPlans.Count);
+                }
+                
+                // Return explicit JSON array
                 return Ok(plans);
             }
             catch (Exception ex)
