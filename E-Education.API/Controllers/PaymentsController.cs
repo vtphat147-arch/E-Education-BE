@@ -208,6 +208,7 @@ namespace E_Education.API.Controllers
                 httpClient.DefaultRequestHeaders.Add("x-client-id", payOSClientId);
                 httpClient.DefaultRequestHeaders.Add("x-api-key", payOSApiKey);
 
+                var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
                 var jsonContent = JsonSerializer.Serialize(requestBody, options);
                 var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
                 
