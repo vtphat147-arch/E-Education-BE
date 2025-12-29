@@ -211,9 +211,13 @@ namespace E_Education.API.Controllers
 
                 var jsonContent = JsonSerializer.Serialize(requestBody, options);
                 var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-                var response = await httpClient.PostAsync(
-                    "https://api.payos.vn/v2/payment-requests",
-                    content);
+                
+                // PayOS API endpoint
+                var payOSApiUrl = Environment.GetEnvironmentVariable("PayOS__ApiUrl") 
+                    ?? _configuration["PayOS:ApiUrl"]
+                    ?? "https://api.payos.vn/v2/payment-requests";
+                
+                var response = await httpClient.PostAsync(payOSApiUrl, content);
 
                 var responseContent = await response.Content.ReadAsStringAsync();
 
