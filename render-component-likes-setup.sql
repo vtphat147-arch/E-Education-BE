@@ -32,3 +32,5 @@ CREATE INDEX IF NOT EXISTS "IX_ComponentLikes_UserId_ComponentId" ON "ComponentL
 -- 1. render-users-setup.sql (creates Users table)
 -- 2. render-design-components-setup.sql (creates DesignComponents table)
 
+
+

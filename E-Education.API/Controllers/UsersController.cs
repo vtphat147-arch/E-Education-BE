@@ -28,6 +28,37 @@ namespace E_Education.API.Controllers
             return int.Parse(userIdClaim ?? "0");
         }
 
+        private async Task<UserDto> MapToUserDto(User user)
+        {
+            // Check if VIP expired
+            bool isVip = user.IsVip && user.VipExpiresAt.HasValue && user.VipExpiresAt.Value > DateTime.UtcNow;
+            if (user.IsVip && !isVip)
+            {
+                user.IsVip = false;
+                await _context.SaveChangesAsync();
+            }
+
+            int? daysRemaining = null;
+            if (isVip && user.VipExpiresAt.HasValue)
+            {
+                daysRemaining = Math.Max(0, (int)(user.VipExpiresAt.Value - DateTime.UtcNow).TotalDays);
+            }
+
+            return new UserDto
+            {
+                Id = user.Id,
+                Email = user.Email,
+                Username = user.Username,
+                FullName = user.FullName,
+                AvatarUrl = user.AvatarUrl,
+                Bio = user.Bio,
+                IsAdmin = user.IsAdmin,
+                IsVip = isVip,
+                VipExpiresAt = user.VipExpiresAt,
+                DaysRemaining = daysRemaining
+            };
+        }
+
         /// <summary>
         /// Get current user profile
         /// </summary>
@@ -45,16 +76,8 @@ namespace E_Education.API.Controllers
                     return NotFound(new { message = "User not found" });
                 }
 
-                return Ok(new UserDto
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    Username = user.Username,
-                    FullName = user.FullName,
-                    AvatarUrl = user.AvatarUrl,
-                    Bio = user.Bio,
-                    IsAdmin = user.IsAdmin
-                });
+                var userDto = await MapToUserDto(user);
+                return Ok(userDto);
             }
             catch (Exception ex)
             {
@@ -107,16 +130,8 @@ namespace E_Education.API.Controllers
                 user.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
-                return Ok(new UserDto
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    Username = user.Username,
-                    FullName = user.FullName,
-                    AvatarUrl = user.AvatarUrl,
-                    Bio = user.Bio,
-                    IsAdmin = user.IsAdmin
-                });
+                var userDto = await MapToUserDto(user);
+                return Ok(userDto);
             }
             catch (Exception ex)
             {
@@ -134,4 +149,6 @@ namespace E_Education.API.Controllers
         public string? AvatarUrl { get; set; }
     }
 }
+
+
 

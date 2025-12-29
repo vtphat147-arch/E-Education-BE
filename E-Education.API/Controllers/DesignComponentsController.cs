@@ -18,6 +18,30 @@ namespace E_Education.API.Controllers
             _context = context;
         }
 
+        // Helper method to check if user is VIP
+        private async Task<bool> IsUserVip(int? userId)
+        {
+            if (!userId.HasValue) return false;
+            
+            var user = await _context.Users.FindAsync(userId.Value);
+            if (user == null) return false;
+
+            // Check if VIP and not expired
+            if (user.IsVip && user.VipExpiresAt.HasValue && user.VipExpiresAt.Value > DateTime.UtcNow)
+            {
+                return true;
+            }
+
+            // Auto-expire VIP if expired
+            if (user.IsVip && (!user.VipExpiresAt.HasValue || user.VipExpiresAt.Value <= DateTime.UtcNow))
+            {
+                user.IsVip = false;
+                await _context.SaveChangesAsync();
+            }
+
+            return false;
+        }
+
         // GET: api/components
         [HttpGet]
         public async Task<ActionResult> GetComponents(
@@ -32,7 +56,20 @@ namespace E_Education.API.Controllers
             [FromQuery] int? minViews = null,
             [FromQuery] int? minLikes = null)
         {
+            // Get user ID if authenticated
+            var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            int? userId = !string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int uid) ? uid : null;
+            
+            // Check VIP status
+            bool isVip = await IsUserVip(userId);
+
             var query = _context.DesignComponents.AsQueryable();
+
+            // Filter premium components: Normal users only see free components
+            if (!isVip)
+            {
+                query = query.Where(c => !c.IsPremium);
+            }
 
             // Filter by category (header, footer, sidebar, layout, typography)
             if (!string.IsNullOrEmpty(category))
@@ -123,6 +160,20 @@ namespace E_Education.API.Controllers
             if (component == null)
             {
                 return NotFound();
+            }
+
+            // Check if component is premium and user is not VIP
+            var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            int? userId = !string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int uid) ? uid : null;
+            bool isVip = await IsUserVip(userId);
+
+            if (component.IsPremium && !isVip)
+            {
+                return StatusCode(403, new { 
+                    message = "Component này yêu cầu tài khoản VIP để xem", 
+                    error = "VIP_REQUIRED",
+                    requiresVip = true
+                });
             }
 
             // Track view history if user is authenticated (only once per user-component, update ViewedAt if exists)

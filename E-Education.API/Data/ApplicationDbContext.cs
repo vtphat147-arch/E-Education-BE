@@ -17,6 +17,8 @@ namespace E_Education.API.Data
         public DbSet<ComponentViewHistory> ComponentViewHistory { get; set; }
         public DbSet<EmailVerification> EmailVerifications { get; set; }
         public DbSet<ComponentLike> ComponentLikes { get; set; }
+        public DbSet<VipPlan> VipPlans { get; set; }
+        public DbSet<Payment> Payments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -107,6 +109,28 @@ namespace E_Education.API.Data
                     .WithMany()
                     .HasForeignKey(e => e.ComponentId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<VipPlan>(entity =>
+            {
+                entity.ToTable("VipPlans");
+                entity.HasIndex(e => e.IsActive);
+            });
+
+            modelBuilder.Entity<Payment>(entity =>
+            {
+                entity.ToTable("Payments");
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.PayOSOrderCode).IsUnique();
+                entity.HasIndex(e => e.Status);
+                entity.HasOne(e => e.User)
+                    .WithMany(u => u.Payments)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.VipPlan)
+                    .WithMany(p => p.Payments)
+                    .HasForeignKey(e => e.VipPlanId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

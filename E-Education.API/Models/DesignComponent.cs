@@ -44,6 +44,8 @@ namespace E_Education.API.Models
 
         public int Likes { get; set; } = 0;
 
+        public bool IsPremium { get; set; } = false; // VIP only components
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

@@ -96,6 +96,14 @@ namespace E_Education.API.Services
             // Generate token
             var token = GenerateJwtToken(user);
 
+            // Check VIP status
+            bool isVip = user.IsVip && user.VipExpiresAt.HasValue && user.VipExpiresAt.Value > DateTime.UtcNow;
+            int? daysRemaining = null;
+            if (isVip && user.VipExpiresAt.HasValue)
+            {
+                daysRemaining = Math.Max(0, (int)(user.VipExpiresAt.Value - DateTime.UtcNow).TotalDays);
+            }
+
             return new AuthResponseDto
             {
                 Token = token,
@@ -107,7 +115,10 @@ namespace E_Education.API.Services
                     FullName = user.FullName,
                     AvatarUrl = user.AvatarUrl,
                     Bio = user.Bio,
-                    IsAdmin = user.IsAdmin
+                    IsAdmin = user.IsAdmin,
+                    IsVip = isVip,
+                    VipExpiresAt = user.VipExpiresAt,
+                    DaysRemaining = daysRemaining
                 }
             };
         }
@@ -131,6 +142,14 @@ namespace E_Education.API.Services
             // Generate token
             var token = GenerateJwtToken(user);
 
+            // Check VIP status
+            bool isVip = user.IsVip && user.VipExpiresAt.HasValue && user.VipExpiresAt.Value > DateTime.UtcNow;
+            int? daysRemaining = null;
+            if (isVip && user.VipExpiresAt.HasValue)
+            {
+                daysRemaining = Math.Max(0, (int)(user.VipExpiresAt.Value - DateTime.UtcNow).TotalDays);
+            }
+
             return new AuthResponseDto
             {
                 Token = token,
@@ -142,7 +161,10 @@ namespace E_Education.API.Services
                     FullName = user.FullName,
                     AvatarUrl = user.AvatarUrl,
                     Bio = user.Bio,
-                    IsAdmin = user.IsAdmin
+                    IsAdmin = user.IsAdmin,
+                    IsVip = isVip,
+                    VipExpiresAt = user.VipExpiresAt,
+                    DaysRemaining = daysRemaining
                 }
             };
         }

@@ -39,6 +39,13 @@ namespace E_Education.API.Models
         [MaxLength(500)]
         public string? GoogleEmail { get; set; }
 
+        public bool IsVip { get; set; } = false;
+
+        public DateTime? VipExpiresAt { get; set; }
+
+        [MaxLength(255)]
+        public string? VipSubscriptionId { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -48,6 +55,7 @@ namespace E_Education.API.Models
         public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
         public virtual ICollection<ComponentViewHistory> ViewHistory { get; set; } = new List<ComponentViewHistory>();
         public virtual ICollection<ComponentLike> ComponentLikes { get; set; } = new List<ComponentLike>();
+        public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
     }
 }
 
