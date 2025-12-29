@@ -2,19 +2,19 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy csproj and restore
-COPY E-Education.API/E-Education.API.csproj E-Education.API/
-RUN dotnet restore E-Education.API/E-Education.API.csproj
+# Copy csproj and restore (better caching)
+COPY E-Education.API/*.csproj E-Education.API/
+RUN dotnet restore E-Education.API/E-Education.API.csproj --no-cache
 
-# Copy everything and build
+# Copy source and build
 COPY E-Education.API/ E-Education.API/
 WORKDIR /src/E-Education.API
-RUN dotnet build E-Education.API.csproj -c Release -o /app/build
+RUN dotnet build E-Education.API.csproj -c Release -o /app/build --no-restore
 
 # Publish
 FROM build AS publish
 WORKDIR /src/E-Education.API
-RUN dotnet publish E-Education.API.csproj -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish E-Education.API.csproj -c Release -o /app/publish /p:UseAppHost=false --no-restore --no-build
 
 # Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0

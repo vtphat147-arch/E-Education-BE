@@ -1,0 +1,33 @@
+# Ignore docs
+*.md
+*.txt
+
+# Ignore SQL files (not needed in Docker image)
+*.sql
+
+# Ignore git
+.git
+.gitignore
+
+# Ignore IDE files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Ignore build outputs
+bin/
+obj/
+
+# Ignore test files
+**/test/
+**/tests/
+**/*Test*
+**/*Tests*
+
+# Ignore other files
+*.log
+*.tmp
+*.cache
+
