@@ -121,23 +121,23 @@ app.MapControllers();
 // Health check endpoint
 app.MapGet("/", () => new { message = "UI Components API is running", status = "ok" });
 
-// Đảm bảo database được tạo và seed data
-using (var scope = app.Services.CreateScope())
+app.Run();
+
+// Initialize database asynchronously (non-blocking)
+_ = Task.Run(async () =>
 {
+    await Task.Delay(3000); // Wait for app to start
+    using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
-        context.Database.EnsureCreated();
-        // Initialize database with default admin user
+        await context.Database.EnsureCreatedAsync();
         E_Education.API.Data.DbInitializer.Initialize(context, logger);
     }
     catch (Exception ex)
     {
-        // Log error nhưng không dừng app
         logger.LogError(ex, "Error ensuring database is created");
     }
-}
-
-app.Run();
+});
 
