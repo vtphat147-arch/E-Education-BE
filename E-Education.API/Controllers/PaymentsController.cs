@@ -213,12 +213,13 @@ namespace E_Education.API.Controllers
                 var jsonContent = JsonSerializer.Serialize(requestBody, options);
                 var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
                 
-                // PayOS API endpoint
+                // PayOS API endpoint - try different URLs if DNS fails
                 var payOSApiUrl = Environment.GetEnvironmentVariable("PayOS__ApiUrl") 
                     ?? _configuration["PayOS:ApiUrl"]
                     ?? "https://api.payos.vn/v2/payment-requests";
                 
                 _logger.LogInformation("Calling PayOS API: {Url}", payOSApiUrl);
+                _logger.LogInformation("PayOS ClientId: {ClientId}", payOSClientId?.Substring(0, Math.Min(8, payOSClientId?.Length ?? 0)) + "...");
                 
                 HttpResponseMessage response;
                 try
