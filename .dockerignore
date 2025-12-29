@@ -1,33 +1,17 @@
-# Ignore docs
+# Ignore everything except source code
+*
+!E-Education.API/
+E-Education.API/*
+!E-Education.API/**/*.cs
+!E-Education.API/**/*.csproj
+!E-Education.API/**/*.json
+!E-Education.API/Dockerfile
+E-Education.API/bin/
+E-Education.API/obj/
 *.md
 *.txt
-
-# Ignore SQL files (not needed in Docker image)
 *.sql
-
-# Ignore git
-.git
-.gitignore
-
-# Ignore IDE files
+.git/
 .vs/
 .vscode/
-.idea/
-*.user
-*.suo
-
-# Ignore build outputs
-bin/
-obj/
-
-# Ignore test files
-**/test/
-**/tests/
-**/*Test*
-**/*Tests*
-
-# Ignore other files
-*.log
-*.tmp
-*.cache
 
