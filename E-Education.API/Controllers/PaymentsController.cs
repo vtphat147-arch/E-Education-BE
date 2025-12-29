@@ -78,36 +78,17 @@ namespace E_Education.API.Controllers
         {
             try
             {
-                _logger.LogInformation("Getting VIP plans...");
-                
                 var plans = await _context.VipPlans
                     .Where(p => p.IsActive)
                     .OrderBy(p => p.Days)
                     .ToListAsync();
-
-                _logger.LogInformation($"Retrieved {plans.Count} active VIP plans");
-                
-                if (plans.Count == 0)
-                {
-                    // Check if table has any data at all
-                    var allPlans = await _context.VipPlans.ToListAsync();
-                    _logger.LogWarning("No active VIP plans found. Total plans in DB: {Count}", allPlans.Count);
-                }
                 
                 return Ok(plans);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving VIP plans: {Message}", ex.Message);
-                _logger.LogError(ex, "Stack trace: {StackTrace}", ex.StackTrace);
-                
-                // Return more detailed error for debugging
-                return StatusCode(500, new 
-                { 
-                    message = "Error retrieving VIP plans", 
-                    error = ex.Message,
-                    innerException = ex.InnerException?.Message
-                });
+                _logger.LogError(ex, "Error retrieving VIP plans");
+                return StatusCode(500, new { message = "Error retrieving VIP plans" });
             }
         }
 
