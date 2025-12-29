@@ -59,8 +59,9 @@ Sau khi deploy, test bằng cách:
 ## Lưu ý:
 
 - **Format Environment Variables trên Render**: Sử dụng `PayOS__ClientId` (double underscore `__`) để map với `PayOS:ClientId` trong config
-- **BaseUrl**: Nên dùng domain Render của bạn (ví dụ: `https://e-education-be.onrender.com`)
-- **ReturnUrl/CancelUrl**: Dùng domain frontend của bạn (ví dụ: Vercel domain)
+- **API URL**: Được hardcode trong code (`https://api-merchant.payos.vn/v2/payment-requests`) - KHÔNG cần set `PayOS__ApiUrl`
+- **BaseUrl**: KHÔNG TỒN TẠI - KHÔNG set `PayOS__BaseUrl`
+- **ReturnUrl/CancelUrl**: Dùng domain frontend của bạn (ví dụ: Vercel domain) - BẮT BUỘC
 - **Webhook URL**: Phải là public URL, Render tự động cung cấp HTTPS
 
 ## Troubleshooting:

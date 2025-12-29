@@ -25,6 +25,8 @@ PayOS__CancelUrl = https://your-frontend-domain.vercel.app/payment-cancel
 **Lưu ý:**
 - Format: `PayOS__ClientId` (double underscore `__`)
 - Lấy credentials từ: https://my.payos.vn → Cài đặt → Thông tin ứng dụng
+- **KHÔNG** set `PayOS__ApiUrl` - API URL được hardcode trong code
+- **KHÔNG** set `PayOS__BaseUrl` - Không tồn tại trong PayOS config
 - Sau khi thêm env vars → **Redeploy service**
 
 ### 2. Setup Webhook trên PayOS Dashboard
