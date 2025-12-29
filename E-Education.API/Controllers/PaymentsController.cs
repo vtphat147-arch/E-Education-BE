@@ -511,6 +511,62 @@ namespace E_Education.API.Controllers
             });
         }
 
+        // POST: api/payments/confirm-webhook - Confirm/update PayOS webhook URL
+        [HttpPost("confirm-webhook")]
+        [AllowAnonymous] // PayOS will call this without auth
+        public async Task<ActionResult> ConfirmWebhook([FromBody] ConfirmWebhookRequest request)
+        {
+            try
+            {
+                var payOSClientId = Environment.GetEnvironmentVariable("PayOS__ClientId") 
+                    ?? _configuration["PayOS:ClientId"];
+                var payOSApiKey = Environment.GetEnvironmentVariable("PayOS__ApiKey") 
+                    ?? _configuration["PayOS:ApiKey"];
+                    
+                if (string.IsNullOrEmpty(payOSClientId) || string.IsNullOrEmpty(payOSApiKey))
+                {
+                    _logger.LogError("PayOS configuration is missing");
+                    return StatusCode(500, new { message = "Cấu hình PayOS chưa được thiết lập" });
+                }
+
+                var httpClient = _httpClientFactory.CreateClient();
+                httpClient.Timeout = TimeSpan.FromSeconds(30);
+                httpClient.DefaultRequestHeaders.Clear();
+                httpClient.DefaultRequestHeaders.Add("x-client-id", payOSClientId);
+                httpClient.DefaultRequestHeaders.Add("x-api-key", payOSApiKey);
+
+                var requestBody = new { webhookUrl = request.WebhookUrl };
+                var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+                var jsonContent = JsonSerializer.Serialize(requestBody, options);
+                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                var response = await httpClient.PostAsync(
+                    "https://api-merchant.payos.vn/v2/confirm-webhook",
+                    content
+                );
+
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogError("PayOS confirm-webhook failed: {StatusCode}, {Response}", 
+                        response.StatusCode, responseContent);
+                    return StatusCode((int)response.StatusCode, new { message = "Failed to confirm webhook" });
+                }
+
+                _logger.LogInformation("PayOS webhook confirmed: {WebhookUrl}", request.WebhookUrl);
+                
+                // Parse and return PayOS response
+                var payOSResponse = JsonSerializer.Deserialize<JsonElement>(responseContent);
+                return Ok(payOSResponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error confirming PayOS webhook");
+                return StatusCode(500, new { message = "Error confirming webhook", error = ex.Message });
+            }
+        }
+
         // GET: api/payments/history
         [HttpGet("history")]
         [Authorize]
