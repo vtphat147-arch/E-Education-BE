@@ -78,31 +78,23 @@ namespace E_Education.API.Controllers
         {
             try
             {
-                // Use raw SQL - simple and direct
-                var sql = @"SELECT ""Id"", ""Name"", ""Days"", ""Price"", ""IsActive"", ""CreatedAt"" 
-                           FROM ""VipPlans"" 
-                           WHERE ""IsActive"" = TRUE 
-                           ORDER BY ""Days""";
-                
-                var plans = await _context.Database
-                    .SqlQueryRaw<dynamic>(sql)
+                var plans = await _context.VipPlans
+                    .Where(p => p.IsActive)
+                    .OrderBy(p => p.Days)
+                    .Select(p => new
+                    {
+                        p.Id,
+                        p.Name,
+                        p.Days,
+                        p.Price,
+                        p.IsActive
+                    })
                     .ToListAsync();
                 
-                // Map to proper format
-                var result = plans.Select(p => new
-                {
-                    Id = (int)p.Id,
-                    Name = (string)p.Name,
-                    Days = (int)p.Days,
-                    Price = (decimal)p.Price,
-                    IsActive = (bool)p.IsActive
-                }).ToList();
-                
-                return Ok(result);
+                return Ok(plans);
             }
-            catch (Exception ex)
+            catch
             {
-                // Return empty array instead of error
                 return Ok(new List<object>());
             }
         }
