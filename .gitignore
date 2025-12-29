@@ -1,7 +1,25 @@
-**/bin/
-**/obj/
-**/.vs/
+# Build results
+bin/
+obj/
+
+# User-specific files
 *.user
 *.suo
-**/appsettings.json
-**/appsettings.Development.json
+*.userosscache
+*.sln.docstates
+
+# Visual Studio
+.vs/
+.vscode/
+.idea/
+
+# PAYOS folder (from PayOS documentation/examples)
+PAYOS/
+payos/
+
+# Environment files
+appsettings.Development.json
+*.env
+
+# Logs
+*.log
