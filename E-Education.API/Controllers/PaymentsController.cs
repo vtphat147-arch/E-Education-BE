@@ -351,6 +351,8 @@ namespace E_Education.API.Controllers
         {
             try
             {
+                _logger.LogInformation("PayOS webhook received: {Request}", request.GetRawText());
+                
                 // Read from Environment Variables (Render) or Configuration
                 var payOSChecksumKey = Environment.GetEnvironmentVariable("PayOS__ChecksumKey") 
                     ?? _configuration["PayOS:ChecksumKey"];
@@ -362,8 +364,19 @@ namespace E_Education.API.Controllers
                 }
 
                 // PayOS webhook format: { "code": "00", "desc": "Success", "data": {...}, "signature": "..." }
+                // PayOS test request might not have "data" field - handle gracefully
                 if (!request.TryGetProperty("data", out var dataElement))
                 {
+                    // This might be a test request from PayOS during webhook setup
+                    // Check if it's a test request or actual webhook
+                    if (request.TryGetProperty("code", out var codeElement))
+                    {
+                        var code = codeElement.GetString();
+                        _logger.LogInformation("PayOS webhook test/verification request received: code={Code}", code);
+                        // Return 200 OK for test requests
+                        return Ok(new { code = "00", desc = "Webhook is working" });
+                    }
+                    
                     _logger.LogWarning("Invalid webhook format: missing data");
                     return BadRequest(new { message = "Invalid webhook format" });
                 }
