@@ -1,3 +1,7 @@
+# Ignore PAYOS folder (documentation/examples from PayOS)
+PAYOS/
+payos/
+
 # Ignore everything except source code
 *
 !E-Education.API/
