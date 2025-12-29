@@ -379,14 +379,20 @@ namespace E_Education.API.Controllers
                 }
 
                 // Verify signature: HMACSHA256 of data JSON string
+                // PayOS uses the raw JSON string of the data object for signature
                 var dataString = dataElement.GetRawText();
                 var calculatedSignature = CreatePayOSSignature(dataString, payOSChecksumKey);
                 
-                if (signature != calculatedSignature)
+                if (!string.Equals(signature, calculatedSignature, StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger.LogWarning("Invalid PayOS webhook signature. Expected: {Expected}, Got: {Actual}", calculatedSignature, signature);
+                    _logger.LogWarning("Invalid PayOS webhook signature. Expected: {Expected}, Got: {Actual}", 
+                        calculatedSignature?.Substring(0, Math.Min(32, calculatedSignature?.Length ?? 0)) + "...", 
+                        signature?.Substring(0, Math.Min(32, signature?.Length ?? 0)) + "...");
+                    _logger.LogWarning("Data string used for signature: {DataString}", dataString);
                     return BadRequest(new { message = "Invalid signature" });
                 }
+                
+                _logger.LogInformation("PayOS webhook signature verified successfully");
 
                 // Extract order code from data
                 if (!dataElement.TryGetProperty("orderCode", out var orderCodeElement))
