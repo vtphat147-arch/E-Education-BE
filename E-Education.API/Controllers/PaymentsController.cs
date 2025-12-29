@@ -152,15 +152,17 @@ namespace E_Education.API.Controllers
                 var payOSChecksumKey = Environment.GetEnvironmentVariable("PayOS__ChecksumKey") 
                     ?? _configuration["PayOS:ChecksumKey"];
                 
-                var baseUrl = Environment.GetEnvironmentVariable("PayOS__BaseUrl") 
+                var baseUrl = (Environment.GetEnvironmentVariable("PayOS__BaseUrl") 
                     ?? _configuration["PayOS:BaseUrl"] 
-                    ?? $"{Request.Scheme}://{Request.Host}";
+                    ?? $"{Request.Scheme}://{Request.Host}").TrimEnd('/');
                 var returnUrl = Environment.GetEnvironmentVariable("PayOS__ReturnUrl") 
                     ?? _configuration["PayOS:ReturnUrl"] 
                     ?? $"{baseUrl}/payment-success?orderCode={payOSOrderCode}";
                 var cancelUrl = Environment.GetEnvironmentVariable("PayOS__CancelUrl") 
                     ?? _configuration["PayOS:CancelUrl"] 
                     ?? $"{baseUrl}/payment-cancel";
+                
+                _logger.LogInformation("PayOS URLs - Return: {ReturnUrl}, Cancel: {CancelUrl}", returnUrl, cancelUrl);
 
                 if (string.IsNullOrEmpty(payOSClientId) || string.IsNullOrEmpty(payOSApiKey) || 
                     string.IsNullOrEmpty(payOSChecksumKey))
