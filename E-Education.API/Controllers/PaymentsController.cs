@@ -223,20 +223,45 @@ namespace E_Education.API.Controllers
                 _logger.LogInformation("Calling PayOS API: {Url}", payOSApiUrl);
                 _logger.LogInformation("PayOS ClientId: {ClientId}", payOSClientId?.Substring(0, Math.Min(8, payOSClientId?.Length ?? 0)) + "...");
                 
-                HttpResponseMessage response;
-                try
+                // Retry logic for DNS resolution issues
+                HttpResponseMessage response = null;
+                int maxRetries = 3;
+                for (int attempt = 1; attempt <= maxRetries; attempt++)
                 {
-                    response = await httpClient.PostAsync(payOSApiUrl, content);
+                    try
+                    {
+                        _logger.LogInformation("PayOS API call attempt {Attempt}/{MaxRetries}", attempt, maxRetries);
+                        response = await httpClient.PostAsync(payOSApiUrl, content);
+                        break; // Success, exit retry loop
+                    }
+                    catch (HttpRequestException ex) when (ex.Message.Contains("Name or service not known") && attempt < maxRetries)
+                    {
+                        _logger.LogWarning(ex, "DNS resolution failed, attempt {Attempt}/{MaxRetries}. Retrying in {Delay}ms...", attempt, maxRetries, attempt * 1000);
+                        await Task.Delay(attempt * 1000); // Exponential backoff: 1s, 2s, 3s
+                        continue;
+                    }
+                    catch (HttpRequestException ex)
+                    {
+                        _logger.LogError(ex, "Network error calling PayOS API: {Message}", ex.Message);
+                        return StatusCode(500, new { message = "Không thể kết nối đến PayOS. Vui lòng thử lại sau.", error = ex.Message });
+                    }
+                    catch (TaskCanceledException ex)
+                    {
+                        if (attempt < maxRetries)
+                        {
+                            _logger.LogWarning(ex, "Timeout calling PayOS API, attempt {Attempt}/{MaxRetries}. Retrying...", attempt, maxRetries);
+                            await Task.Delay(attempt * 1000);
+                            continue;
+                        }
+                        _logger.LogError(ex, "Timeout calling PayOS API after {MaxRetries} attempts", maxRetries);
+                        return StatusCode(500, new { message = "Kết nối đến PayOS quá lâu. Vui lòng thử lại sau." });
+                    }
                 }
-                catch (HttpRequestException ex)
+                
+                if (response == null)
                 {
-                    _logger.LogError(ex, "Network error calling PayOS API: {Message}", ex.Message);
-                    return StatusCode(500, new { message = "Không thể kết nối đến PayOS. Vui lòng thử lại sau.", error = ex.Message });
-                }
-                catch (TaskCanceledException ex)
-                {
-                    _logger.LogError(ex, "Timeout calling PayOS API");
-                    return StatusCode(500, new { message = "Kết nối đến PayOS quá lâu. Vui lòng thử lại sau." });
+                    _logger.LogError("Failed to get response from PayOS API after {MaxRetries} attempts", maxRetries);
+                    return StatusCode(500, new { message = "Không thể kết nối đến PayOS sau nhiều lần thử. Vui lòng thử lại sau." });
                 }
 
                 var responseContent = await response.Content.ReadAsStringAsync();
