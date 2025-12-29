@@ -320,9 +320,12 @@ namespace E_Education.API.Controllers
                     orderCodeElement.ValueKind == JsonValueKind.Number)
                 {
                     payOSResponseOrderCode = orderCodeElement.GetInt64();
-                    // Update payment record with actual orderCode from PayOS
-                    payment.PayOSOrderCode = payOSResponseOrderCode.ToString();
-                    await _context.SaveChangesAsync();
+                    // Update payment record with actual orderCode from PayOS (if different)
+                    if (payment.PayOSOrderCode != payOSResponseOrderCode.ToString())
+                    {
+                        payment.PayOSOrderCode = payOSResponseOrderCode.ToString();
+                        await _context.SaveChangesAsync();
+                    }
                 }
 
                 _logger.LogInformation("Payment URL generated successfully: {Url}, orderCode: {OrderCode}", paymentUrl, payOSResponseOrderCode);
