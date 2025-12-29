@@ -172,20 +172,20 @@ namespace E_Education.API.Controllers
                 }
 
                 // Prepare PayOS payment request according to PayOS API v2
+                // Note: PayOS API v2 uses "item" (singular object) not "items" (array)
+                var payOSItem = new
+                {
+                    name = plan.Name,
+                    quantity = 1,
+                    price = (int)plan.Price
+                };
+
                 var payOSRequest = new
                 {
                     orderCode = payOSOrderCode,
                     amount = (int)plan.Price,
                     description = $"Nâng cấp {plan.Name}",
-                    items = new[]
-                    {
-                        new
-                        {
-                            name = plan.Name,
-                            quantity = 1,
-                            price = (int)plan.Price
-                        }
-                    },
+                    item = payOSItem,  // PayOS API v2 uses "item" (singular), not "items"
                     cancelUrl = cancelUrl,
                     returnUrl = returnUrl
                 };
@@ -200,7 +200,7 @@ namespace E_Education.API.Controllers
                     orderCode = payOSRequest.orderCode,
                     amount = payOSRequest.amount,
                     description = payOSRequest.description,
-                    items = payOSRequest.items,
+                    item = payOSRequest.item,  // PayOS API v2 uses "item" (singular), not "items"
                     cancelUrl = payOSRequest.cancelUrl,
                     returnUrl = payOSRequest.returnUrl,
                     signature = signature
