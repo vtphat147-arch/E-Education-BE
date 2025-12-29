@@ -543,5 +543,10 @@ namespace E_Education.API.Controllers
         {
             public int PlanId { get; set; }
         }
+
+        public class ConfirmWebhookRequest
+        {
+            public string WebhookUrl { get; set; } = string.Empty;
+        }
     }
 }
