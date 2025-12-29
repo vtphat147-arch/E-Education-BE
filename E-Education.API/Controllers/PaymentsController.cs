@@ -188,8 +188,12 @@ namespace E_Education.API.Controllers
 
                 // Create signature: PayOS requires signature from query string format (alphabetically sorted)
                 // Format: amount=$amount&cancelUrl=$cancelUrl&description=$description&orderCode=$orderCode&returnUrl=$returnUrl
-                var signatureData = $"amount={amount}&cancelUrl={Uri.EscapeDataString(cancelUrl)}&description={Uri.EscapeDataString(description)}&orderCode={payOSOrderCode}&returnUrl={Uri.EscapeDataString(returnUrl)}";
+                // NOTE: Do NOT URL encode - use raw URL strings
+                var signatureData = $"amount={amount}&cancelUrl={cancelUrl}&description={description}&orderCode={payOSOrderCode}&returnUrl={returnUrl}";
                 var signature = CreatePayOSSignature(signatureData, payOSChecksumKey);
+                
+                _logger.LogInformation("PayOS Signature Data: {Data}", signatureData);
+                _logger.LogInformation("PayOS Signature (first 16 chars): {Signature}", signature?.Substring(0, Math.Min(16, signature?.Length ?? 0)) + "...");
 
                 var requestBody = new
                 {
@@ -269,11 +273,47 @@ namespace E_Education.API.Controllers
                     return StatusCode(500, new { message = "Không thể tạo liên kết thanh toán", error = responseContent });
                 }
 
+                // Log full response for debugging
+                _logger.LogInformation("PayOS API response: {Response}", responseContent);
+
                 var payOSResponse = JsonSerializer.Deserialize<JsonElement>(responseContent);
-                var paymentUrl = payOSResponse.GetProperty("data").GetProperty("checkoutUrl").GetString();
-                var qrCode = payOSResponse.GetProperty("data").TryGetProperty("qrCode", out var qrCodeElement) 
+
+                // Check if response has error code
+                if (payOSResponse.TryGetProperty("code", out var codeElement))
+                {
+                    var code = codeElement.GetString();
+                    if (code != "00")
+                    {
+                        var desc = payOSResponse.TryGetProperty("desc", out var descElement) 
+                            ? descElement.GetString() 
+                            : "Unknown error";
+                        _logger.LogError("PayOS API returned error code: {Code}, desc: {Desc}, full response: {Response}", code, desc, responseContent);
+                        return StatusCode(500, new { message = $"PayOS error: {desc}", error = responseContent });
+                    }
+                }
+
+                // Safely check for data field
+                if (!payOSResponse.TryGetProperty("data", out var dataElement) || 
+                    dataElement.ValueKind == JsonValueKind.Null)
+                {
+                    _logger.LogError("PayOS response missing 'data' field. Full response: {Response}", responseContent);
+                    return StatusCode(500, new { message = "PayOS trả về dữ liệu không hợp lệ", error = "Missing or null data field in response" });
+                }
+
+                // Safely get checkoutUrl
+                if (!dataElement.TryGetProperty("checkoutUrl", out var checkoutUrlElement) || 
+                    checkoutUrlElement.ValueKind == JsonValueKind.Null)
+                {
+                    _logger.LogError("PayOS response missing 'checkoutUrl'. Data: {Data}", dataElement.GetRawText());
+                    return StatusCode(500, new { message = "PayOS không trả về link thanh toán", error = "Missing checkoutUrl in response data" });
+                }
+
+                var paymentUrl = checkoutUrlElement.GetString();
+                var qrCode = dataElement.TryGetProperty("qrCode", out var qrCodeElement) && qrCodeElement.ValueKind != JsonValueKind.Null
                     ? qrCodeElement.GetString() 
                     : null;
+
+                _logger.LogInformation("Payment URL generated successfully: {Url}", paymentUrl);
 
                 return Ok(new
                 {
