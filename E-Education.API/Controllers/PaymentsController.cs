@@ -12,7 +12,6 @@ namespace E_Education.API.Controllers
 {
     [ApiController]
     [Route("api/payments")]
-    [Authorize]
     public class PaymentsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -34,6 +33,7 @@ namespace E_Education.API.Controllers
 
         // GET: api/payments/vip-status
         [HttpGet("vip-status")]
+        [Authorize]
         public async Task<ActionResult> GetVipStatus()
         {
             var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -109,6 +109,7 @@ namespace E_Education.API.Controllers
 
         // POST: api/payments/create-order
         [HttpPost("create-order")]
+        [Authorize]
         public async Task<ActionResult> CreateOrder([FromBody] CreateOrderRequest request)
         {
             var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -365,6 +366,7 @@ namespace E_Education.API.Controllers
 
         // GET: api/payments/verify/{orderCode} - Verify payment status (for frontend polling)
         [HttpGet("verify/{orderCode}")]
+        [Authorize]
         public async Task<ActionResult> VerifyPayment(string orderCode)
         {
             var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -394,6 +396,7 @@ namespace E_Education.API.Controllers
 
         // GET: api/payments/history
         [HttpGet("history")]
+        [Authorize]
         public async Task<ActionResult> GetPaymentHistory()
         {
             var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
