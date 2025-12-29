@@ -205,6 +205,7 @@ namespace E_Education.API.Controllers
                 };
 
                 var httpClient = _httpClientFactory.CreateClient();
+                httpClient.Timeout = TimeSpan.FromSeconds(30);
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Add("x-client-id", payOSClientId);
                 httpClient.DefaultRequestHeaders.Add("x-api-key", payOSApiKey);
@@ -217,7 +218,23 @@ namespace E_Education.API.Controllers
                     ?? _configuration["PayOS:ApiUrl"]
                     ?? "https://api.payos.vn/v2/payment-requests";
                 
-                var response = await httpClient.PostAsync(payOSApiUrl, content);
+                _logger.LogInformation("Calling PayOS API: {Url}", payOSApiUrl);
+                
+                HttpResponseMessage response;
+                try
+                {
+                    response = await httpClient.PostAsync(payOSApiUrl, content);
+                }
+                catch (HttpRequestException ex)
+                {
+                    _logger.LogError(ex, "Network error calling PayOS API: {Message}", ex.Message);
+                    return StatusCode(500, new { message = "Không thể kết nối đến PayOS. Vui lòng thử lại sau.", error = ex.Message });
+                }
+                catch (TaskCanceledException ex)
+                {
+                    _logger.LogError(ex, "Timeout calling PayOS API");
+                    return StatusCode(500, new { message = "Kết nối đến PayOS quá lâu. Vui lòng thử lại sau." });
+                }
 
                 var responseContent = await response.Content.ReadAsStringAsync();
 
