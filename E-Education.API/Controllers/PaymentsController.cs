@@ -152,15 +152,17 @@ namespace E_Education.API.Controllers
                 var payOSChecksumKey = Environment.GetEnvironmentVariable("PayOS__ChecksumKey") 
                     ?? _configuration["PayOS:ChecksumKey"];
                 
-                var baseUrl = (Environment.GetEnvironmentVariable("PayOS__BaseUrl") 
-                    ?? _configuration["PayOS:BaseUrl"] 
-                    ?? $"{Request.Scheme}://{Request.Host}").TrimEnd('/');
+                // PayOS URLs - MUST be set in environment variables
                 var returnUrl = Environment.GetEnvironmentVariable("PayOS__ReturnUrl") 
-                    ?? _configuration["PayOS:ReturnUrl"] 
-                    ?? $"{baseUrl}/payment-success?orderCode={payOSOrderCode}";
+                    ?? _configuration["PayOS:ReturnUrl"];
                 var cancelUrl = Environment.GetEnvironmentVariable("PayOS__CancelUrl") 
-                    ?? _configuration["PayOS:CancelUrl"] 
-                    ?? $"{baseUrl}/payment-cancel";
+                    ?? _configuration["PayOS:CancelUrl"];
+                
+                if (string.IsNullOrEmpty(returnUrl) || string.IsNullOrEmpty(cancelUrl))
+                {
+                    _logger.LogError("PayOS ReturnUrl or CancelUrl is missing");
+                    return StatusCode(500, new { message = "Cấu hình PayOS URL chưa được thiết lập" });
+                }
                 
                 _logger.LogInformation("PayOS URLs - Return: {ReturnUrl}, Cancel: {CancelUrl}", returnUrl, cancelUrl);
 
@@ -216,10 +218,8 @@ namespace E_Education.API.Controllers
                 var jsonContent = JsonSerializer.Serialize(requestBody, options);
                 var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
                 
-                // PayOS API endpoint - Production: https://api-merchant.payos.vn/v2/payment-requests
-                var payOSApiUrl = Environment.GetEnvironmentVariable("PayOS__ApiUrl") 
-                    ?? _configuration["PayOS:ApiUrl"]
-                    ?? "https://api-merchant.payos.vn/v2/payment-requests";
+                // PayOS API endpoint - Hardcoded (Production)
+                const string payOSApiUrl = "https://api-merchant.payos.vn/v2/payment-requests";
                 
                 _logger.LogInformation("Calling PayOS API: {Url}", payOSApiUrl);
                 _logger.LogInformation("PayOS ClientId: {ClientId}", payOSClientId?.Substring(0, Math.Min(8, payOSClientId?.Length ?? 0)) + "...");
@@ -300,7 +300,7 @@ namespace E_Education.API.Controllers
                     return StatusCode(500, new { message = "PayOS trả về dữ liệu không hợp lệ", error = "Missing or null data field in response" });
                 }
 
-                // Safely get checkoutUrl
+                // Safely get checkoutUrl and orderCode from PayOS response
                 if (!dataElement.TryGetProperty("checkoutUrl", out var checkoutUrlElement) || 
                     checkoutUrlElement.ValueKind == JsonValueKind.Null)
                 {
@@ -313,13 +313,25 @@ namespace E_Education.API.Controllers
                     ? qrCodeElement.GetString() 
                     : null;
 
-                _logger.LogInformation("Payment URL generated successfully: {Url}", paymentUrl);
+                // Get orderCode from PayOS response (it's long type)
+                // Note: PayOS returns orderCode as long, we store it as string in DB
+                long payOSResponseOrderCode = payOSOrderCode; // Default to our generated code
+                if (dataElement.TryGetProperty("orderCode", out var orderCodeElement) && 
+                    orderCodeElement.ValueKind == JsonValueKind.Number)
+                {
+                    payOSResponseOrderCode = orderCodeElement.GetInt64();
+                    // Update payment record with actual orderCode from PayOS
+                    payment.PayOSOrderCode = payOSResponseOrderCode.ToString();
+                    await _context.SaveChangesAsync();
+                }
+
+                _logger.LogInformation("Payment URL generated successfully: {Url}, orderCode: {OrderCode}", paymentUrl, payOSResponseOrderCode);
 
                 return Ok(new
                 {
                     paymentUrl,
                     qrCode,
-                    orderCode = payOSOrderCode.ToString()
+                    orderCode = payOSResponseOrderCode.ToString()
                 });
             }
             catch (Exception ex)

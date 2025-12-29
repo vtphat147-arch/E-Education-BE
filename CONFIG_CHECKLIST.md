@@ -12,14 +12,15 @@ PayOS__ClientId = your-client-id-here
 PayOS__ApiKey = your-api-key-here  
 PayOS__ChecksumKey = your-checksum-key-here
 
-# PayOS URLs (QUAN TRỌNG)
+# PayOS URLs (BẮT BUỘC)
 PayOS__ReturnUrl = https://your-frontend-domain.vercel.app/payment-success
 PayOS__CancelUrl = https://your-frontend-domain.vercel.app/payment-cancel
-
-# Optional - có thể để default
-PayOS__BaseUrl = https://your-backend-domain.onrender.com
-PayOS__ApiUrl = https://api-merchant.payos.vn/v2/payment-requests
 ```
+
+**⚠️ QUAN TRỌNG:**
+- **KHÔNG** set `PayOS__ApiUrl` - API URL được hardcode trong code
+- **KHÔNG** set `PayOS__BaseUrl` - Không tồn tại trong PayOS config
+- **CHỈ** cần 5 biến trên (ClientId, ApiKey, ChecksumKey, ReturnUrl, CancelUrl)
 
 **Lưu ý:**
 - Format: `PayOS__ClientId` (double underscore `__`)

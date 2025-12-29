@@ -21,10 +21,14 @@
 PayOS__ClientId = your-client-id-here
 PayOS__ApiKey = your-api-key-here
 PayOS__ChecksumKey = your-checksum-key-here
-PayOS__BaseUrl = https://e-education-be.onrender.com
 PayOS__ReturnUrl = https://your-frontend-domain.vercel.app/payment-success
 PayOS__CancelUrl = https://your-frontend-domain.vercel.app/payment-cancel
 ```
+
+**⚠️ LƯU Ý QUAN TRỌNG:**
+- **KHÔNG** set `PayOS__ApiUrl` - API URL được hardcode trong code
+- **KHÔNG** set `PayOS__BaseUrl` - Không tồn tại trong PayOS config
+- **CHỈ** cần 5 biến trên
 
 ### Cách 2: Qua Render CLI
 
@@ -32,7 +36,6 @@ PayOS__CancelUrl = https://your-frontend-domain.vercel.app/payment-cancel
 render env set PayOS__ClientId your-client-id-here
 render env set PayOS__ApiKey your-api-key-here
 render env set PayOS__ChecksumKey your-checksum-key-here
-render env set PayOS__BaseUrl https://e-education-be.onrender.com
 render env set PayOS__ReturnUrl https://your-frontend-domain.vercel.app/payment-success
 render env set PayOS__CancelUrl https://your-frontend-domain.vercel.app/payment-cancel
 ```
