@@ -76,7 +76,8 @@ if (string.IsNullOrEmpty(connectionString))
 }
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+        npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "public")));
 
 // CORS Configuration
 var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL") ?? "https://*.vercel.app";

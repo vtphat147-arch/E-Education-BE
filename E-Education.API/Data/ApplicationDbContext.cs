@@ -113,8 +113,14 @@ namespace E_Education.API.Data
 
             modelBuilder.Entity<VipPlan>(entity =>
             {
-                entity.ToTable("VipPlans");
+                entity.ToTable("VipPlans", null, t => t.ExcludeFromMigrations(false));
                 entity.HasIndex(e => e.IsActive);
+                entity.Property(e => e.Id).HasColumnName("Id");
+                entity.Property(e => e.Name).HasColumnName("Name");
+                entity.Property(e => e.Days).HasColumnName("Days");
+                entity.Property(e => e.Price).HasColumnName("Price");
+                entity.Property(e => e.IsActive).HasColumnName("IsActive");
+                entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt");
             });
 
             modelBuilder.Entity<Payment>(entity =>
