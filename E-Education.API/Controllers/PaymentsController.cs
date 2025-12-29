@@ -118,9 +118,9 @@ namespace E_Education.API.Controllers
             }
 
             // Generate unique order code - PayOS requires integer orderCode (max 19 digits)
-            // Format: timestamp (13 digits) + userId (6 digits) = 19 digits max
-            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            var payOSOrderCode = long.Parse($"{timestamp % 1000000000000}{userId % 1000000}".PadRight(19, '0').Substring(0, Math.Min(19, 19)));
+            // Use Unix timestamp in seconds (like PayOS Java demo: System.currentTimeMillis() / 1000)
+            // This ensures uniqueness and simplicity
+            var payOSOrderCode = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             
             // Store original order code for reference
             var orderCode = $"VIP_{userId}_{payOSOrderCode}";
