@@ -383,11 +383,7 @@ namespace E_Education.API.Controllers
                     return BadRequest(new { message = "Invalid configuration" });
                 }
                 
-                _logger.LogWarning("ChecksumKey length: {Length}", payOSChecksumKey.Length);
-                _logger.LogWarning("ChecksumKey (first 8 chars): {Prefix}...", 
-                    payOSChecksumKey.Substring(0, Math.Min(8, payOSChecksumKey.Length)));
-                _logger.LogWarning("ChecksumKey (last 8 chars): ...{Suffix}", 
-                    payOSChecksumKey.Substring(Math.Max(0, payOSChecksumKey.Length - 8)));
+                _logger.LogInformation("ChecksumKey configured (length: {Length})", payOSChecksumKey.Length);
 
                 // PayOS webhook format: { "code": "00", "desc": "Success", "data": {...}, "signature": "..." }
                 // PayOS test request might not have "data" field - handle gracefully
@@ -418,59 +414,28 @@ namespace E_Education.API.Controllers
                 }
 
                 // ⚠️ QUAN TRỌNG: PayOS webhook signature được tính từ JSON string của data object
-                // Thử nhiều cách serialize để tìm cách đúng với PayOS
-                var dataRaw = dataElement.GetRawText(); // GetRawText() giữ nguyên format gốc từ PayOS
+                // Theo PayOS docs: signature = HMACSHA256(JSON.stringify(data), ChecksumKey)
+                // PayOS dùng raw JSON string từ data object (giữ nguyên format)
+                var dataRaw = dataElement.GetRawText();
                 
-                _logger.LogInformation("DATA RAW: {DataRaw}", dataRaw);
-                _logger.LogInformation("SIGNATURE: {Signature}", receivedSignature);
+                // Tính signature từ raw JSON string
+                var calculatedSignature = CreatePayOSSignature(dataRaw, payOSChecksumKey);
                 
-                // Thử cách 1: Dùng raw JSON string từ PayOS (như hiện tại)
-                var calculatedSignature1 = CreatePayOSSignature(dataRaw, payOSChecksumKey);
+                _logger.LogInformation("Calculated signature (first 32 chars): {Calculated}...", 
+                    calculatedSignature?.Substring(0, Math.Min(32, calculatedSignature?.Length ?? 0)));
+                _logger.LogInformation("Received signature (first 32 chars): {Received}...", 
+                    receivedSignature?.Substring(0, Math.Min(32, receivedSignature?.Length ?? 0)));
                 
-                // Thử cách 2: Serialize lại với compact format (không spaces, không indentation)
-                var compactJson = JsonSerializer.Serialize(dataElement, new JsonSerializerOptions 
-                { 
-                    WriteIndented = false,
-                    PropertyNamingPolicy = null // Giữ nguyên tên property (không convert camelCase)
-                });
-                var calculatedSignature2 = CreatePayOSSignature(compactJson, payOSChecksumKey);
-                
-                // Log để debug
-                _logger.LogWarning("🔍 Testing signature calculation methods:");
-                _logger.LogWarning("Method 1 (GetRawText): {Sig1}", calculatedSignature1);
-                _logger.LogWarning("Method 2 (Compact re-serialize): {Sig2}", calculatedSignature2);
-                _logger.LogWarning("PayOS signature: {Received}", receivedSignature);
-                _logger.LogWarning("Data raw length: {Len1}, Compact length: {Len2}", dataRaw.Length, compactJson.Length);
-                
-                // So sánh từng cách
-                string calculatedSignature = null;
-                string methodUsed = null;
-                
-                if (string.Equals(receivedSignature, calculatedSignature1, StringComparison.OrdinalIgnoreCase))
+                // So sánh signature (case-insensitive)
+                if (!string.Equals(receivedSignature, calculatedSignature, StringComparison.OrdinalIgnoreCase))
                 {
-                    calculatedSignature = calculatedSignature1;
-                    methodUsed = "GetRawText (original)";
-                    _logger.LogInformation("✅ Signature match: Method 1 (GetRawText)");
-                }
-                else if (string.Equals(receivedSignature, calculatedSignature2, StringComparison.OrdinalIgnoreCase))
-                {
-                    calculatedSignature = calculatedSignature2;
-                    methodUsed = "Compact re-serialize";
-                    _logger.LogInformation("✅ Signature match: Method 2 (Compact re-serialize)");
-                }
-                
-                if (calculatedSignature == null)
-                {
-                    _logger.LogError("❌ Invalid PayOS webhook signature - none of the methods matched!");
-                    _logger.LogError("Expected (Method 1 - GetRawText): {Expected1}", calculatedSignature1);
-                    _logger.LogError("Expected (Method 2 - Compact): {Expected2}", calculatedSignature2);
-                    _logger.LogError("Received from PayOS: {Received}", receivedSignature);
-                    _logger.LogError("Data raw: {DataRaw}", dataRaw);
-                    _logger.LogError("Data compact: {Compact}", compactJson);
+                    _logger.LogWarning("❌ Invalid PayOS webhook signature!");
+                    _logger.LogWarning("Expected: {Expected}", calculatedSignature);
+                    _logger.LogWarning("Received: {Received}", receivedSignature);
                     return BadRequest(new { message = "Invalid signature" });
                 }
                 
-                _logger.LogInformation("✅ Using signature method: {Method}", methodUsed);
+                _logger.LogInformation("✅ PayOS webhook signature verified successfully");
                 
                 _logger.LogInformation("PayOS webhook signature verified successfully");
 
