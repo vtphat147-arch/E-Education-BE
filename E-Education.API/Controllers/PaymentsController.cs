@@ -383,7 +383,7 @@ namespace E_Education.API.Controllers
                     return BadRequest(new { message = "Invalid configuration" });
                 }
                 
-                _logger.LogInformation("ChecksumKey configured (length: {Length})", payOSChecksumKey.Length);
+                // ChecksumKey đã được configure (không log để bảo mật)
 
                 // PayOS webhook format: { "code": "00", "desc": "Success", "data": {...}, "signature": "..." }
                 // PayOS test request might not have "data" field - handle gracefully
@@ -413,21 +413,18 @@ namespace E_Education.API.Controllers
                     return BadRequest(new { message = "Missing signature" });
                 }
 
-                // ⚠️ QUAN TRỌNG: PayOS webhook signature được tính từ JSON string của data object
-                // Theo PayOS docs: signature = HMACSHA256(JSON.stringify(data), ChecksumKey)
-                // PayOS dùng raw JSON string từ data object (giữ nguyên format)
-                var dataRaw = dataElement.GetRawText();
+                // ⚠️ QUAN TRỌNG: PayOS webhook signature được tính từ QUERY STRING format (không phải JSON!)
+                // PayOS yêu cầu: HMACSHA256(sorted key=value string, ChecksumKey)
+                // Format: key1=value1&key2=value2&... (keys sorted alphabetically)
+                var signatureString = BuildSignatureString(dataElement);
+                var calculatedSignature = CreatePayOSSignature(signatureString, payOSChecksumKey);
                 
-                // Tính signature từ raw JSON string
-                var calculatedSignature = CreatePayOSSignature(dataRaw, payOSChecksumKey);
+                _logger.LogInformation("Signature string: {SignatureString}", signatureString);
+                _logger.LogInformation("Expected signature: {Expected}", calculatedSignature);
+                _logger.LogInformation("Received signature: {Received}", receivedSignature);
                 
-                _logger.LogInformation("Calculated signature (first 32 chars): {Calculated}...", 
-                    calculatedSignature?.Substring(0, Math.Min(32, calculatedSignature?.Length ?? 0)));
-                _logger.LogInformation("Received signature (first 32 chars): {Received}...", 
-                    receivedSignature?.Substring(0, Math.Min(32, receivedSignature?.Length ?? 0)));
-                
-                // So sánh signature (case-insensitive)
-                if (!string.Equals(receivedSignature, calculatedSignature, StringComparison.OrdinalIgnoreCase))
+                // So sánh signature (case-sensitive theo PayOS)
+                if (!string.Equals(receivedSignature, calculatedSignature, StringComparison.Ordinal))
                 {
                     _logger.LogWarning("❌ Invalid PayOS webhook signature!");
                     _logger.LogWarning("Expected: {Expected}", calculatedSignature);
@@ -436,8 +433,6 @@ namespace E_Education.API.Controllers
                 }
                 
                 _logger.LogInformation("✅ PayOS webhook signature verified successfully");
-                
-                _logger.LogInformation("PayOS webhook signature verified successfully");
 
                 // Extract order code from data
                 if (!dataElement.TryGetProperty("orderCode", out var orderCodeElement))
@@ -630,6 +625,37 @@ namespace E_Education.API.Controllers
                 .ToListAsync();
 
             return Ok(payments);
+        }
+
+        // Build signature string từ JsonElement theo format PayOS: key1=value1&key2=value2 (sorted by key)
+        private string BuildSignatureString(JsonElement data)
+        {
+            var dict = new SortedDictionary<string, string>();
+            
+            foreach (var prop in data.EnumerateObject())
+            {
+                // Bỏ qua null values
+                if (prop.Value.ValueKind == JsonValueKind.Null) continue;
+                
+                // Convert value to string
+                var value = prop.Value.ValueKind switch
+                {
+                    JsonValueKind.Number => prop.Value.GetRawText(), // Giữ nguyên format số
+                    JsonValueKind.String => prop.Value.GetString() ?? "",
+                    JsonValueKind.True => "true",
+                    JsonValueKind.False => "false",
+                    _ => prop.Value.GetRawText()
+                };
+                
+                // Chỉ thêm vào nếu value không rỗng
+                if (!string.IsNullOrEmpty(value))
+                {
+                    dict[prop.Name] = value;
+                }
+            }
+            
+            // Build query string: key1=value1&key2=value2&...
+            return string.Join("&", dict.Select(kvp => $"{kvp.Key}={kvp.Value}"));
         }
 
         // Helper method to create PayOS signature (HMACSHA256)
