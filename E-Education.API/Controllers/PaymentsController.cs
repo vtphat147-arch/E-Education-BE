@@ -443,17 +443,23 @@ namespace E_Education.API.Controllers
 
                 var orderCode = orderCodeElement.GetInt64().ToString();
                 
-                // Check success status and code in data
-                var success = request.TryGetProperty("success", out var successElement) && successElement.GetBoolean();
+                // ⚠️ QUAN TRỌNG: PayOS KHÔNG gửi field "success"
+                // Phải check: top-level "code" == "00" AND data.code == "00"
+                var topCode = request.TryGetProperty("code", out var topCodeElement) 
+                    ? topCodeElement.GetString() 
+                    : null;
                 var dataCode = dataElement.TryGetProperty("code", out var dataCodeElement) 
                     ? dataCodeElement.GetString() 
                     : null;
                 var dataDesc = dataElement.TryGetProperty("desc", out var dataDescElement) 
                     ? dataDescElement.GetString() 
                     : null;
+                
+                // Payment is successful if both codes are "00"
+                var isSuccess = topCode == "00" && dataCode == "00";
 
-                _logger.LogInformation("PayOS webhook received: orderCode={OrderCode}, success={Success}, dataCode={DataCode}, dataDesc={DataDesc}", 
-                    orderCode, success, dataCode, dataDesc);
+                _logger.LogInformation("PayOS webhook received: orderCode={OrderCode}, topCode={TopCode}, dataCode={DataCode}, isSuccess={IsSuccess}, dataDesc={DataDesc}", 
+                    orderCode, topCode, dataCode, isSuccess, dataDesc);
 
                 // Find payment by PayOS order code
                 var payment = await _context.Payments
@@ -474,15 +480,16 @@ namespace E_Education.API.Controllers
                 }
 
                 // Update payment status based on PayOS response
-                // Success = true and data.code = "00" means payment was successful (PAID)
-                if (success && dataCode == "00")
+                // Payment successful if: top-level code == "00" AND data.code == "00"
+                if (isSuccess)
                 {
                     payment.Status = "completed";
                     payment.CompletedAt = DateTime.UtcNow;
                     
-                    if (dataElement.TryGetProperty("transactionDateTime", out var transDateTime))
+                    // ⚠️ QUAN TRỌNG: PayOS dùng "reference" làm transaction code, KHÔNG phải "transactionDateTime"
+                    if (dataElement.TryGetProperty("reference", out var referenceElement))
                     {
-                        payment.PayOSTransactionCode = transDateTime.GetString();
+                        payment.PayOSTransactionCode = referenceElement.GetString();
                     }
 
                     // Update user VIP status
@@ -508,8 +515,8 @@ namespace E_Education.API.Controllers
                     // Payment failed, cancelled, or expired
                     payment.Status = "failed";
                     await _context.SaveChangesAsync();
-                    _logger.LogInformation("Payment failed/cancelled for order code: {OrderCode}, code: {Code}, desc: {Desc}", 
-                        orderCode, dataCode, dataDesc);
+                    _logger.LogInformation("Payment failed/cancelled for order code: {OrderCode}, topCode: {TopCode}, dataCode: {DataCode}, desc: {Desc}", 
+                        orderCode, topCode, dataCode, dataDesc);
                 }
 
                 return Ok(new { code = "00", desc = "Success" });
@@ -552,59 +559,22 @@ namespace E_Education.API.Controllers
         }
 
         // POST: api/payments/confirm-webhook - Confirm/update PayOS webhook URL
+        // ⚠️ LƯU Ý: PayOS đã BỎ endpoint /v2/confirm-webhook
+        // Bạn PHẢI đăng ký webhook qua PayOS Dashboard:
+        // https://my.payos.vn → Settings → Webhook → Nhập URL: https://e-education-be.onrender.com/api/payments/webhook
         [HttpPost("confirm-webhook")]
-        [AllowAnonymous] // PayOS will call this without auth
+        [AllowAnonymous]
+        [Obsolete("PayOS đã bỏ endpoint /v2/confirm-webhook. Vui lòng đăng ký webhook qua PayOS Dashboard.")]
         public async Task<ActionResult> ConfirmWebhook([FromBody] ConfirmWebhookRequest request)
         {
-            try
-            {
-                var payOSClientId = Environment.GetEnvironmentVariable("PayOS__ClientId") 
-                    ?? _configuration["PayOS:ClientId"];
-                var payOSApiKey = Environment.GetEnvironmentVariable("PayOS__ApiKey") 
-                    ?? _configuration["PayOS:ApiKey"];
-                    
-                if (string.IsNullOrEmpty(payOSClientId) || string.IsNullOrEmpty(payOSApiKey))
-                {
-                    _logger.LogError("PayOS configuration is missing");
-                    return StatusCode(500, new { message = "Cấu hình PayOS chưa được thiết lập" });
-                }
-
-                var httpClient = _httpClientFactory.CreateClient();
-                httpClient.Timeout = TimeSpan.FromSeconds(30);
-                httpClient.DefaultRequestHeaders.Clear();
-                httpClient.DefaultRequestHeaders.Add("x-client-id", payOSClientId);
-                httpClient.DefaultRequestHeaders.Add("x-api-key", payOSApiKey);
-
-                var requestBody = new { webhookUrl = request.WebhookUrl };
-                var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-                var jsonContent = JsonSerializer.Serialize(requestBody, options);
-                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-
-                var response = await httpClient.PostAsync(
-                    "https://api-merchant.payos.vn/v2/confirm-webhook",
-                    content
-                );
-
-                var responseContent = await response.Content.ReadAsStringAsync();
-                
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogError("PayOS confirm-webhook failed: {StatusCode}, {Response}", 
-                        response.StatusCode, responseContent);
-                    return StatusCode((int)response.StatusCode, new { message = "Failed to confirm webhook" });
-                }
-
-                _logger.LogInformation("PayOS webhook confirmed: {WebhookUrl}", request.WebhookUrl);
-                
-                // Parse and return PayOS response
-                var payOSResponse = JsonSerializer.Deserialize<JsonElement>(responseContent);
-                return Ok(payOSResponse);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error confirming PayOS webhook");
-                return StatusCode(500, new { message = "Error confirming webhook", error = ex.Message });
-            }
+            _logger.LogWarning("⚠️ Endpoint confirm-webhook đã bị PayOS bỏ. Vui lòng đăng ký webhook qua Dashboard: https://my.payos.vn");
+            
+            return BadRequest(new 
+            { 
+                message = "PayOS đã bỏ endpoint /v2/confirm-webhook",
+                instruction = "Vui lòng đăng ký webhook qua PayOS Dashboard: https://my.payos.vn → Settings → Webhook",
+                webhookUrl = "https://e-education-be.onrender.com/api/payments/webhook"
+            });
         }
 
         // GET: api/payments/history
@@ -628,33 +598,30 @@ namespace E_Education.API.Controllers
         }
 
         // Build signature string từ JsonElement theo format PayOS: key1=value1&key2=value2 (sorted by key)
+        // ⚠️ QUAN TRỌNG: PayOS yêu cầu GIỮ NGUYÊN TẤT CẢ fields, kể cả field rỗng
         private string BuildSignatureString(JsonElement data)
         {
             var dict = new SortedDictionary<string, string>();
             
             foreach (var prop in data.EnumerateObject())
             {
-                // Bỏ qua null values
-                if (prop.Value.ValueKind == JsonValueKind.Null) continue;
-                
                 // Convert value to string
-                var value = prop.Value.ValueKind switch
+                string value = prop.Value.ValueKind switch
                 {
-                    JsonValueKind.Number => prop.Value.GetRawText(), // Giữ nguyên format số
                     JsonValueKind.String => prop.Value.GetString() ?? "",
+                    JsonValueKind.Number => prop.Value.GetRawText(), // Giữ nguyên format số
                     JsonValueKind.True => "true",
                     JsonValueKind.False => "false",
+                    JsonValueKind.Null => "",
                     _ => prop.Value.GetRawText()
                 };
                 
-                // Chỉ thêm vào nếu value không rỗng
-                if (!string.IsNullOrEmpty(value))
-                {
-                    dict[prop.Name] = value;
-                }
+                // ⚠️ QUAN TRỌNG: PayOS yêu cầu GIỮ NGUYÊN tất cả fields (kể cả rỗng)
+                // Không được bỏ field rỗng vì PayOS đã ký với format có field rỗng
+                dict[prop.Name] = value;
             }
             
-            // Build query string: key1=value1&key2=value2&...
+            // Build query string: key1=value1&key2=value2&... (sorted alphabetically)
             return string.Join("&", dict.Select(kvp => $"{kvp.Key}={kvp.Value}"));
         }
 
