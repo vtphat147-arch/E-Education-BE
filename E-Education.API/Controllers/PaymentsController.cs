@@ -469,8 +469,20 @@ namespace E_Education.API.Controllers
 
                 if (payment == null)
                 {
+                    // ⚠️ PayOS test webhook gửi orderCode nhỏ (vd: 123) - không có trong DB
+                    // Nếu orderCode < 1000, coi như test webhook từ PayOS Dashboard
+                    if (long.TryParse(orderCode, out var orderCodeLong) && orderCodeLong < 1000)
+                    {
+                        _logger.LogInformation("⚠️ PayOS test webhook received (orderCode={OrderCode} < 1000). This is a test, not a real payment.", orderCode);
+                        return Ok(new { 
+                            code = "00", 
+                            desc = "Test webhook received successfully",
+                            message = "This is a test webhook from PayOS. Signature verified OK. Real payments will be processed when orderCode exists in database."
+                        });
+                    }
+                    
                     _logger.LogWarning("Payment not found for order code: {OrderCode}", orderCode);
-                    return NotFound(new { message = "Payment not found" });
+                    return NotFound(new { message = "Payment not found", orderCode });
                 }
 
                 if (payment.Status == "completed")
