@@ -369,12 +369,25 @@ namespace E_Education.API.Controllers
                 // Read from Environment Variables (Render) or Configuration
                 var payOSChecksumKey = Environment.GetEnvironmentVariable("PayOS__ChecksumKey") 
                     ?? _configuration["PayOS:ChecksumKey"];
-                    
+                
+                // ⚠️ Trim whitespace - hay gặp khi copy/paste từ PayOS dashboard
+                if (!string.IsNullOrEmpty(payOSChecksumKey))
+                {
+                    payOSChecksumKey = payOSChecksumKey.Trim();
+                }
+                
+                // Log để debug (chỉ log một phần key, không log full để bảo mật)
                 if (string.IsNullOrEmpty(payOSChecksumKey))
                 {
                     _logger.LogError("PayOS ChecksumKey not configured");
                     return BadRequest(new { message = "Invalid configuration" });
                 }
+                
+                _logger.LogWarning("ChecksumKey length: {Length}", payOSChecksumKey.Length);
+                _logger.LogWarning("ChecksumKey (first 8 chars): {Prefix}...", 
+                    payOSChecksumKey.Substring(0, Math.Min(8, payOSChecksumKey.Length)));
+                _logger.LogWarning("ChecksumKey (last 8 chars): ...{Suffix}", 
+                    payOSChecksumKey.Substring(Math.Max(0, payOSChecksumKey.Length - 8)));
 
                 // PayOS webhook format: { "code": "00", "desc": "Success", "data": {...}, "signature": "..." }
                 // PayOS test request might not have "data" field - handle gracefully
