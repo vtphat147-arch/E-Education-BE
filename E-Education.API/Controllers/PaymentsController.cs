@@ -347,11 +347,24 @@ namespace E_Education.API.Controllers
         // POST: api/payments/webhook (PayOS callback)
         [HttpPost("webhook")]
         [AllowAnonymous]
-        public async Task<ActionResult> HandleWebhook([FromBody] JsonElement request)
+        public async Task<ActionResult> HandleWebhook()
         {
             try
             {
-                _logger.LogInformation("PayOS webhook received: {Request}", request.GetRawText());
+                // ⚠️ QUAN TRỌNG: Đọc raw body trực tiếp để verify signature đúng
+                // Không dùng [FromBody] vì ASP.NET Core có thể serialize/deserialize lại làm thay đổi format
+                Request.EnableBuffering(); // Cho phép đọc stream nhiều lần
+                Request.Body.Position = 0; // Reset về đầu stream
+                
+                using var reader = new StreamReader(Request.Body, Encoding.UTF8, leaveOpen: true);
+                var rawBody = await reader.ReadToEndAsync();
+                
+                Request.Body.Position = 0; // Reset lại để các middleware khác có thể đọc
+                
+                _logger.LogInformation("PayOS webhook received - RAW BODY: {RawBody}", rawBody);
+                
+                // Parse JSON từ raw body
+                var request = JsonDocument.Parse(rawBody).RootElement;
                 
                 // Read from Environment Variables (Render) or Configuration
                 var payOSChecksumKey = Environment.GetEnvironmentVariable("PayOS__ChecksumKey") 
@@ -381,27 +394,37 @@ namespace E_Education.API.Controllers
                     return BadRequest(new { message = "Invalid webhook format" });
                 }
 
-                var signature = request.TryGetProperty("signature", out var sigElement) 
+                var receivedSignature = request.TryGetProperty("signature", out var sigElement) 
                     ? sigElement.GetString() 
                     : null;
 
-                if (string.IsNullOrEmpty(signature))
+                if (string.IsNullOrEmpty(receivedSignature))
                 {
                     _logger.LogWarning("Missing signature in webhook");
                     return BadRequest(new { message = "Missing signature" });
                 }
 
-                // Verify signature: HMACSHA256 of data JSON string
+                // ⚠️ QUAN TRỌNG: Lấy raw JSON string của data object (KHÔNG serialize lại)
                 // PayOS uses the raw JSON string of the data object for signature
-                var dataString = dataElement.GetRawText();
-                var calculatedSignature = CreatePayOSSignature(dataString, payOSChecksumKey);
+                var dataRaw = dataElement.GetRawText(); // GetRawText() giữ nguyên format gốc
                 
-                if (!string.Equals(signature, calculatedSignature, StringComparison.OrdinalIgnoreCase))
+                _logger.LogInformation("DATA RAW: {DataRaw}", dataRaw);
+                _logger.LogInformation("SIGNATURE: {Signature}", receivedSignature);
+                
+                // Verify signature: HMACSHA256 của data JSON string
+                var calculatedSignature = CreatePayOSSignature(dataRaw, payOSChecksumKey);
+                
+                _logger.LogInformation("Expected signature: {Expected}, Received: {Received}", 
+                    calculatedSignature?.Substring(0, Math.Min(32, calculatedSignature?.Length ?? 0)) + "...", 
+                    receivedSignature?.Substring(0, Math.Min(32, receivedSignature?.Length ?? 0)) + "...");
+                
+                // So sánh signature (case-insensitive)
+                if (!string.Equals(receivedSignature, calculatedSignature, StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger.LogWarning("Invalid PayOS webhook signature. Expected: {Expected}, Got: {Actual}", 
-                        calculatedSignature?.Substring(0, Math.Min(32, calculatedSignature?.Length ?? 0)) + "...", 
-                        signature?.Substring(0, Math.Min(32, signature?.Length ?? 0)) + "...");
-                    _logger.LogWarning("Data string used for signature: {DataString}", dataString);
+                    _logger.LogWarning("❌ Invalid PayOS webhook signature!");
+                    _logger.LogWarning("Expected: {Expected}", calculatedSignature);
+                    _logger.LogWarning("Received: {Received}", receivedSignature);
+                    _logger.LogWarning("Data string used: {DataRaw}", dataRaw);
                     return BadRequest(new { message = "Invalid signature" });
                 }
                 
